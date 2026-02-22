@@ -1,0 +1,12 @@
+[
+  {
+    "ContainingType": "Airport_TMPPP_1._0.Server.Controllers.FlightsController",
+    "Method": "GetFlights",
+    "RelativePath": "api/Flights",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  }
+]

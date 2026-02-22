@@ -1,0 +1,16 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "Airport_TMPPP_1.0.Server\\Airport_TMPPP_1.0.Server.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      },
+      {
+        "Path": "airport_tmppp_1.0.client\\airport_tmppp_1.0.client.esproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

@@ -1,0 +1,24 @@
+{
+  "Version": 1,
+  "Hash": "bfENrcH2USAHl7FOjhNkJGhRcRfzyKJRmoB0t874wYQ=",
+  "Source": "Airport_TMPPP_1.0.Server",
+  "BasePath": "_content/Airport_TMPPP_1.0.Server",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [
+    {
+      "Identity": "C:\\Users\\Acer\\source\\repos\\Airport_TMPPP_1.0\\airport_tmppp_1.0.client\\airport_tmppp_1.0.client.esproj",
+      "Version": 2,
+      "Source": "airport_tmppp_1.0.client",
+      "GetPublishAssetsTargets": "GetCurrentProjectPublishStaticWebAssetItems",
+      "AdditionalPublishProperties": "",
+      "AdditionalPublishPropertiesToRemove": "WebPublishProfileFile;TargetFramework;RuntimeIdentifier;SelfContained",
+      "GetBuildAssetsTargets": "GetCurrentProjectBuildStaticWebAssetItems",
+      "AdditionalBuildProperties": "",
+      "AdditionalBuildPropertiesToRemove": "WebPublishProfileFile;TargetFramework;RuntimeIdentifier;SelfContained"
+    }
+  ],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}

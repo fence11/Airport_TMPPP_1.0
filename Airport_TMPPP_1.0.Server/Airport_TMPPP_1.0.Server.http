@@ -1,0 +1,6 @@
+@Airport_TMPPP_1._0.Server_HostAddress = http://localhost:5118
+
+GET {{Airport_TMPPP_1._0.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,257 @@
+@startuml
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+
+' =======================
+' ENTITIES
+' =======================
+package "BusinessLogic.Entities" {
+  abstract class BaseEntity {
+    +Id : int
+    +Validate() : void
+  }
+
+  abstract class AuditableEntity {
+    +CreatedAt : DateTime
+    +UpdatedAt : DateTime
+    +MarkUpdated() : void
+  }
+
+  class Airport {
+    -Name : string
+    -Code : string
+    +Validate() : void
+  }
+
+  class Flight {
+    -FlightNumber : string
+    -AirportId : int
+    +MarkUpdated() : void
+    +Validate() : void
+  }
+
+  class Passenger {
+    -FirstName : string
+    -LastName : string
+    -Email : string
+    -PhoneNumber : string
+    +UpdateContactInfo(phone : string) : void
+    +MarkUpdated() : void
+    +Validate() : void
+  }
+
+  BaseEntity <|-- AuditableEntity
+  BaseEntity <|-- Airport
+  AuditableEntity <|-- Flight
+  AuditableEntity <|-- Passenger
+
+  Airport "1" <-- "0..*" Flight : belongs to
+}
+
+
+' =======================
+' INTERFACES
+' =======================
+package "BusinessLogic.Interfaces" {
+
+  interface IRepository<T> {
+    +GetByIdAsync(id)
+    +GetAllAsync()
+    +AddAsync(entity)
+    +UpdateAsync(entity)
+    +DeleteAsync(id)
+    +ExistsAsync(id)
+  }
+
+  interface IUnitOfWork {
+    +Airports : IRepository<Airport>
+    +Flights : IRepository<Flight>
+    +Passengers : IRepository<Passenger>
+    +SaveChangesAsync()
+    +BeginTransactionAsync()
+    +CommitTransactionAsync()
+    +RollbackTransactionAsync()
+  }
+
+  interface IAirportQueryService {
+    +GetAirportsAsync() : Task<IEnumerable<Airport>>
+    +GetAirportByIdAsync(id : int) : Task<Airport?>
+    +GetAirportByCodeAsync(code : string) : Task<Airport?>
+    +AirportExistsAsync(id : int) : Task<bool>
+  }
+
+  interface IAirportCommandService {
+    +CreateAirportAsync(name : string, code : string) : Task<Airport>
+    +UpdateAirportAsync(id : int, name : string, code : string) : Task<Airport>
+    +DeleteAirportAsync(id : int) : Task<bool>
+  }
+
+  interface IFlightQueryService {
+    +GetFlightsAsync() : Task<IEnumerable<Flight>>
+    +GetFlightByIdAsync(id : int) : Task<Flight?>
+    +FlightExistsAsync(id : int) : Task<bool>
+  }
+
+  interface IFlightCommandService {
+    +CreateFlightAsync(flightNumber : string, airportId : int) : Task<Flight>
+    +UpdateFlightAsync(id : int, flightNumber : string, airportId : int) : Task<Flight>
+    +DeleteFlightAsync(id : int) : Task<bool>
+  }
+
+  interface IPassengerQueryService {
+    +GetPassengersAsync() : Task<IEnumerable<Passenger>>
+    +GetPassengerByIdAsync(id : int) : Task<Passenger?>
+    +PassengerExistsAsync(id : int) : Task<bool>
+  }
+
+  interface IPassengerCommandService {
+    +CreatePassengerAsync(firstName : string, lastName : string, email : string, phoneNumber : string?) : Task<Passenger>
+    +UpdatePassengerAsync(id : int, phoneNumber : string?) : Task<Passenger>
+    +DeletePassengerAsync(id : int) : Task<bool>
+  }
+}
+
+' =======================
+' SERVICES
+' =======================
+package "BusinessLogic.Services" {
+
+  class AirportService {
+    -_unitOfWork : IUnitOfWork
+    +GetAirportsAsync()
+    +GetAirportByIdAsync(id : int)
+    +GetAirportByCodeAsync(code : string)
+    +AirportExistsAsync(id : int)
+    +CreateAirportAsync(name : string, code : string)
+    +UpdateAirportAsync(id : int, name : string, code : string)
+    +DeleteAirportAsync(id : int)
+  }
+
+  class FlightService {
+    -_unitOfWork : IUnitOfWork
+    +GetFlightsAsync()
+    +GetFlightByIdAsync(id : int)
+    +FlightExistsAsync(id : int)
+    +CreateFlightAsync(flightNumber : string, airportId : int)
+    +UpdateFlightAsync(id : int, flightNumber : string, airportId : int)
+    +DeleteFlightAsync(id : int)
+  }
+
+  class PassengerService {
+    -_unitOfWork : IUnitOfWork
+    +GetPassengersAsync()
+    +GetPassengerByIdAsync(id : int)
+    +PassengerExistsAsync(id : int)
+    +CreatePassengerAsync(firstName : string, lastName : string, email : string, phoneNumber : string?)
+    +UpdatePassengerAsync(id : int, phoneNumber : string?)
+    +DeletePassengerAsync(id : int)
+  }
+
+  IAirportQueryService <|.. AirportService
+  IAirportCommandService <|.. AirportService
+  IFlightQueryService <|.. FlightService
+  IFlightCommandService <|.. FlightService
+  IPassengerQueryService <|.. PassengerService
+  IPassengerCommandService <|.. PassengerService
+
+  AirportService --> IUnitOfWork
+  FlightService --> IUnitOfWork
+  PassengerService --> IUnitOfWork
+}
+
+' =======================
+' DATA ACCESS
+' =======================
+package "Data.Repositories" {
+
+  class Repository<T> {
+    -_context : AirportDbContext
+    +GetByIdAsync(id : int)
+    +GetAllAsync()
+    +AddAsync(entity : T)
+    +UpdateAsync(entity : T)
+    +DeleteAsync(id : int)
+    +ExistsAsync(id : int)
+  }
+
+  class UnitOfWork {
+    -_context : AirportDbContext
+    +Airports : IRepository<Airport>
+    +Flights : IRepository<Flight>
+    +Passengers : IRepository<Passenger>
+    +SaveChangesAsync()
+    +BeginTransactionAsync()
+    +CommitTransactionAsync()
+    +RollbackTransactionAsync()
+  }
+
+  IRepository <|.. Repository
+  IUnitOfWork <|.. UnitOfWork
+}
+
+package "Data.Context" {
+  class AirportDbContext {
+    +Airports : DbSet<Airport>
+    +Flights : DbSet<Flight>
+    +Passengers : DbSet<Passenger>
+  }
+}
+
+Repository --> AirportDbContext
+UnitOfWork --> Repository
+UnitOfWork --> AirportDbContext
+
+' =======================
+' CONTROLLERS
+' =======================
+package "Controllers" {
+
+  class AirportsController {
+    -_airportQueryService : IAirportQueryService
+    -_airportCommandService : IAirportCommandService
+    +GetAirports() : IActionResult
+    +GetAirport(id : int) : IActionResult
+    +CreateAirport(request) : IActionResult
+    +UpdateAirport(id : int, request) : IActionResult
+    +DeleteAirport(id : int) : IActionResult
+  }
+
+  class FlightsController {
+    -_flightQueryService : IFlightQueryService
+    -_flightCommandService : IFlightCommandService
+    +GetFlights() : IActionResult
+    +GetFlight(id : int) : IActionResult
+    +CreateFlight(request) : IActionResult
+    +UpdateFlight(id : int, request) : IActionResult
+    +DeleteFlight(id : int) : IActionResult
+  }
+
+  class PassengersController {
+    -_passengerQueryService : IPassengerQueryService
+    -_passengerCommandService : IPassengerCommandService
+    +GetPassengers() : IActionResult
+    +GetPassenger(id : int) : IActionResult
+    +CreatePassenger(request) : IActionResult
+    +UpdatePassenger(id : int, request) : IActionResult
+    +DeletePassenger(id : int) : IActionResult
+  }
+
+  AirportsController --> IAirportQueryService
+  AirportsController --> IAirportCommandService
+  FlightsController --> IFlightQueryService
+  FlightsController --> IFlightCommandService
+  PassengersController --> IPassengerQueryService
+  PassengersController --> IPassengerCommandService
+}
+
+' =======================
+' SEED
+' =======================
+package "Data.Seed" {
+  class DatabaseSeeder {
+    +SeedAsync() : Task
+  }
+}
+
+DatabaseSeeder --> AirportDbContext
+@enduml
