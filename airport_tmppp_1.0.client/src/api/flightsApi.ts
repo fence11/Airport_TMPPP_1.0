@@ -1,9 +1,8 @@
-import axios from "axios";
+import { apiClient } from "./client";
 import type { Flight } from "../features/flights/flightTypes";
 
-const API_URL = "https://localhost:7281/api/Flights"
-
 export const getFlights = async (): Promise<Flight[]> => {
-    const response = await axios.get<Flight[]>(API_URL);
+    const response = await apiClient.get<Flight[]>("/api/Flights");
+    console.log("[Flights] Server response:", response.data);
     return response.data;
 };
