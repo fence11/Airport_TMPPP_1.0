@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createReservation, type ReservationSummary, type TransportType } from "../../api/reservationsApi";
+import { createReservation, type ReservationSummary, type TransportType, type TicketClass } from "../../api/reservationsApi";
 
 const TRANSPORT_OPTIONS: { value: TransportType; label: string }[] = [
     { value: 0, label: "Airplane" },
@@ -7,8 +7,14 @@ const TRANSPORT_OPTIONS: { value: TransportType; label: string }[] = [
     { value: 2, label: "Bus" },
 ];
 
+const TICKET_OPTIONS: { value: TicketClass; label: string }[] = [
+    { value: 0, label: "Economy" },
+    { value: 1, label: "First Class" },
+];
+
 const TransportReservationSection = () => {
     const [transportType, setTransportType] = useState<TransportType>(0);
+    const [ticketClass, setTicketClass] = useState<TicketClass>(0);
     const [customerName, setCustomerName] = useState("");
     const [distanceKm, setDistanceKm] = useState("");
     const [result, setResult] = useState<ReservationSummary | null>(null);
@@ -32,6 +38,7 @@ const TransportReservationSection = () => {
         try {
             const summary = await createReservation({
                 transportType,
+                ticketClass,
                 customerName: customerName.trim(),
                 distanceKm: distance,
             });
@@ -65,6 +72,23 @@ const TransportReservationSection = () => {
                         style={{ width: "100%", padding: "0.5rem" }}
                     >
                         {TRANSPORT_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div style={{ marginBottom: "1rem" }}>
+                    <label htmlFor="ticket-class" style={{ display: "block", marginBottom: "0.25rem" }}>
+                        Ticket class
+                    </label>
+                    <select
+                        id="ticket-class"
+                        value={ticketClass}
+                        onChange={(e) => setTicketClass(Number(e.target.value) as TicketClass)}
+                        style={{ width: "100%", padding: "0.5rem" }}
+                    >
+                        {TICKET_OPTIONS.map((opt) => (
                             <option key={opt.value} value={opt.value}>
                                 {opt.label}
                             </option>

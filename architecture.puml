@@ -1,6 +1,11 @@
-@startuml
+@startuml Base
 skinparam packageStyle rectangle
 skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
 
 ' =======================
 ' ENTITIES
@@ -236,13 +241,166 @@ package "Controllers" {
     +DeletePassenger(id : int) : IActionResult
   }
 
+  class ReservationsController {
+    +CreateReservation(request) : IActionResult
+  }
+
   AirportsController --> IAirportQueryService
   AirportsController --> IAirportCommandService
   FlightsController --> IFlightQueryService
   FlightsController --> IFlightCommandService
   PassengersController --> IPassengerQueryService
   PassengersController --> IPassengerCommandService
+  ReservationsController --> TransportReservationFactory
 }
+
+' =======================
+' DESIGN PATTERNS - FACTORY METHOD
+' =======================
+package "BusinessLogic.DesignPatterns.FactoryMethod" {
+  
+  enum TransportType {
+    Airplane
+    Train
+    Bus
+  }
+
+  interface ITransport {
+    +Name : string
+    +Description : string
+    +CalculatePrice(distanceKm : int) : decimal
+  }
+
+  abstract class TransportReservation {
+    #CustomerName : string
+    #DistanceKm : int
+    #TransportReservation(customerName : string, distanceKm : int)
+    #CreateTransport() : ITransport
+    +MakeReservation() : ReservationSummary
+  }
+
+  class AirplaneReservation {
+    +AirplaneReservation(customerName : string, distanceKm : int)
+    #CreateTransport() : ITransport
+  }
+
+  class TrainReservation {
+    +TrainReservation(customerName : string, distanceKm : int)
+    #CreateTransport() : ITransport
+  }
+
+  class BusReservation {
+    +BusReservation(customerName : string, distanceKm : int)
+    #CreateTransport() : ITransport
+  }
+
+  class AirplaneTransport {
+    +Name : string
+    +Description : string
+    +CalculatePrice(distanceKm : int) : decimal
+  }
+
+  class TrainTransport {
+    +Name : string
+    +Description : string
+    +CalculatePrice(distanceKm : int) : decimal
+  }
+
+  class BusTransport {
+    +Name : string
+    +Description : string
+    +CalculatePrice(distanceKm : int) : decimal
+  }
+
+  class ReservationSummary {
+    +CustomerName : string
+    +TransportName : string
+    +DistanceKm : int
+    +Price : decimal
+    +TransportDescription : string
+  }
+
+  class TransportReservationFactory {
+    {static} +CreateReservation(type : TransportType, customerName : string, distanceKm : int) : TransportReservation
+  }
+
+  ' abstract factory additions
+  enum TicketClass {
+    Economy
+    FirstClass
+  }
+
+  interface IReservationFactory {
+    +CreateReservation(type : TransportType, customerName : string, distanceKm : int) : TransportReservation
+  }
+
+  class EconomyReservationFactory {
+    +CreateReservation(type : TransportType, customerName : string, distanceKm : int) : TransportReservation
+  }
+
+  class FirstClassReservationFactory {
+    +CreateReservation(type : TransportType, customerName : string, distanceKm : int) : TransportReservation
+  }
+
+  class EconomyTicketReservation {
+    +EconomyTicketReservation(inner : TransportReservation)
+    +MakeReservation() : ReservationSummary
+  }
+
+  class FirstClassTicketReservation {
+    +FirstClassTicketReservation(inner : TransportReservation)
+    +MakeReservation() : ReservationSummary
+  }
+
+  TransportReservation <|-- AirplaneReservation
+  TransportReservation <|-- TrainReservation
+  TransportReservation <|-- BusReservation
+
+  ITransport <|.. AirplaneTransport
+  ITransport <|.. TrainTransport
+  ITransport <|.. BusTransport
+
+  AirplaneReservation --> AirplaneTransport : creates
+  TrainReservation --> TrainTransport : creates
+  BusReservation --> BusTransport : creates
+
+  TransportReservationFactory --> AirplaneReservation
+  TransportReservationFactory --> TrainReservation
+  TransportReservationFactory --> BusReservation
+  TransportReservationFactory --> TransportType
+
+  EconomyReservationFactory --> TransportReservationFactory
+  EconomyReservationFactory --> EconomyTicketReservation
+  FirstClassReservationFactory --> TransportReservationFactory
+  FirstClassReservationFactory --> FirstClassTicketReservation
+
+  EconomyTicketReservation --> TransportReservation : wraps
+  FirstClassTicketReservation --> TransportReservation : wraps
+}
+
+' =======================
+' REQUEST/RESPONSE MODELS
+' =======================
+package "Controllers.Models" {
+  class CreateReservationRequest {
+    +TransportType : int
+    +TicketClass : int
+    +CustomerName : string
+    +DistanceKm : int
+  }
+
+  class ReservationResponse {
+    +CustomerName : string
+    +TransportName : string
+    +DistanceKm : int
+    +Price : decimal
+    +TransportDescription : string
+    +TicketClass : TicketClass
+  }
+}
+
+ReservationsController --> CreateReservationRequest
+ReservationsController --> ReservationResponse
 
 ' =======================
 ' SEED

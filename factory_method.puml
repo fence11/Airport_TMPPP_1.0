@@ -1,0 +1,98 @@
+@startuml FactoryMethod
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+' =======================
+' DESIGN PATTERNS - FACTORY METHOD
+' =======================
+package "BusinessLogic.DesignPatterns.FactoryMethod" {
+  
+  enum TransportType {
+    Airplane
+    Train
+    Bus
+  }
+
+  interface ITransport {
+    +Name : string
+    +Description : string
+    +CalculatePrice(distanceKm : int) : decimal
+  }
+
+  abstract class TransportReservation {
+    #CustomerName : string
+    #DistanceKm : int
+    #TransportReservation(customerName : string, distanceKm : int)
+    #CreateTransport() : ITransport
+    +MakeReservation() : ReservationSummary
+  }
+
+  class AirplaneReservation {
+    +AirplaneReservation(customerName : string, distanceKm : int)
+    #CreateTransport() : ITransport
+  }
+
+  class TrainReservation {
+    +TrainReservation(customerName : string, distanceKm : int)
+    #CreateTransport() : ITransport
+  }
+
+  class BusReservation {
+    +BusReservation(customerName : string, distanceKm : int)
+    #CreateTransport() : ITransport
+  }
+
+  class AirplaneTransport {
+    +Name : string
+    +Description : string
+    +CalculatePrice(distanceKm : int) : decimal
+  }
+
+  class TrainTransport {
+    +Name : string
+    +Description : string
+    +CalculatePrice(distanceKm : int) : decimal
+  }
+
+  class BusTransport {
+    +Name : string
+    +Description : string
+    +CalculatePrice(distanceKm : int) : decimal
+  }
+
+  class ReservationSummary {
+    +CustomerName : string
+    +TransportName : string
+    +DistanceKm : int
+    +Price : decimal
+    +TransportDescription : string
+  }
+
+  class TransportReservationFactory {
+    {static} +CreateReservation(type : TransportType, customerName : string, distanceKm : int) : TransportReservation
+  }
+
+  TransportReservation <|-- AirplaneReservation
+  TransportReservation <|-- TrainReservation
+  TransportReservation <|-- BusReservation
+
+  ITransport <|.. AirplaneTransport
+  ITransport <|.. TrainTransport
+  ITransport <|.. BusTransport
+
+  AirplaneReservation --> AirplaneTransport : creates
+  TrainReservation --> TrainTransport : creates
+  BusReservation --> BusTransport : creates
+
+  TransportReservationFactory --> AirplaneReservation
+  TransportReservationFactory --> TrainReservation
+  TransportReservationFactory --> BusReservation
+  TransportReservationFactory --> TransportType
+}
+
+@enduml

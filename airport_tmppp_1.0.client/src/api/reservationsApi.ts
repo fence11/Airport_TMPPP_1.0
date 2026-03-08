@@ -1,6 +1,7 @@
 import { apiClient } from "./client";
 
 export type TransportType = 0 | 1 | 2;
+export type TicketClass = 0 | 1;
 
 export type ReservationSummary = {
     customerName: string;
@@ -8,10 +9,12 @@ export type ReservationSummary = {
     distanceKm: number;
     price: number;
     transportDescription: string;
+    ticketClass: TicketClass;
 };
 
 export type CreateReservationRequest = {
     transportType: TransportType;
+    ticketClass: TicketClass;
     customerName: string;
     distanceKm: number;
 };

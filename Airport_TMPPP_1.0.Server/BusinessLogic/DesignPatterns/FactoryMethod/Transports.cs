@@ -1,8 +1,8 @@
 namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.FactoryMethod
 {
-    /// <summary>
-    /// Concrete airplane transport product.
-    /// </summary>
+
+    // Concrete airplane transport product
+
     public sealed class AirplaneTransport : ITransport
     {
         public string Name => "Airplane";
@@ -19,9 +19,7 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.FactoryMethod
         }
     }
 
-    /// <summary>
-    /// Concrete train transport product.
-    /// </summary>
+    // Concrete train transport product
     public sealed class TrainTransport : ITransport
     {
         public string Name => "Train";
@@ -38,9 +36,7 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.FactoryMethod
         }
     }
 
-    /// <summary>
-    /// Concrete bus transport product.
-    /// </summary>
+    /// Concrete bus transport product
     public sealed class BusTransport : ITransport
     {
         public string Name => "Bus";

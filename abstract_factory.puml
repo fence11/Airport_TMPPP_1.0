@@ -1,0 +1,60 @@
+@startuml AbstractFactory
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+' =======================
+' DESIGN PATTERNS - ABSTRACT FACTORY (ticket-class decorators)
+' =======================
+package "BusinessLogic.DesignPatterns.FactoryMethod" {
+
+  enum TicketClass {
+    Economy
+    FirstClass
+  }
+
+  interface IReservationFactory {
+    +CreateReservation(type : TransportType, customerName : string, distanceKm : int) : TransportReservation
+  }
+
+  class EconomyReservationFactory {
+    +CreateReservation(type : TransportType, customerName : string, distanceKm : int) : TransportReservation
+  }
+
+  class FirstClassReservationFactory {
+    +CreateReservation(type : TransportType, customerName : string, distanceKm : int) : TransportReservation
+  }
+
+  class EconomyTicketReservation {
+    +EconomyTicketReservation(inner : TransportReservation)
+    +MakeReservation() : ReservationSummary
+  }
+
+  class FirstClassTicketReservation {
+    +FirstClassTicketReservation(inner : TransportReservation)
+    +MakeReservation() : ReservationSummary
+  }
+
+  ' Minimal references to transport side so diagram is self-contained
+  abstract class TransportReservation {
+    +MakeReservation() : ReservationSummary
+  }
+
+  class TransportReservationFactory {
+    {static} +CreateReservation(type : TransportType, customerName : string, distanceKm : int) : TransportReservation
+  }
+
+  EconomyReservationFactory --> TransportReservationFactory
+  EconomyReservationFactory --> EconomyTicketReservation
+  FirstClassReservationFactory --> TransportReservationFactory
+  FirstClassReservationFactory --> FirstClassTicketReservation
+
+  EconomyTicketReservation --> TransportReservation : wraps
+  FirstClassTicketReservation --> TransportReservation : wraps
+}
+
+@enduml

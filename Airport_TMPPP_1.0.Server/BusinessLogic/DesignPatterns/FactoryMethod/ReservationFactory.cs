@@ -1,9 +1,7 @@
 namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.FactoryMethod
 {
-    /// <summary>
-    /// Enum used by clients to request a reservation type
-    /// without depending on concrete transport classes.
-    /// </summary>
+
+    // Client requests a transport type (Airplane, Train, or Bus)
     public enum TransportType
     {
         Airplane,
@@ -11,11 +9,8 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.FactoryMethod
         Bus
     }
 
-    /// <summary>
-    /// Creator base class in the Factory Method pattern.
-    /// Exposes a factory method that subclasses override to
-    /// instantiate concrete transports.
-    /// </summary>
+
+    /// The Creator that defines the factory method
     public abstract class TransportReservation
     {
         public string CustomerName { get; }
@@ -32,17 +27,12 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.FactoryMethod
             DistanceKm = distanceKm;
         }
 
-        /// <summary>
-        /// Factory Method – subclasses decide which concrete ITransport
-        /// implementation will be created.
-        /// </summary>
+        // which subclasses override to create specific transport products
         protected abstract ITransport CreateTransport();
 
-        /// <summary>
-        /// High-level operation that uses the factory method.
-        /// The client works with the ITransport abstraction only.
-        /// </summary>
-        public ReservationSummary MakeReservation()
+        // making the high‑level operation virtual allows subclasses or decorators
+        // to override pricing logic (e.g. ticket class modifiers)
+        public virtual ReservationSummary MakeReservation()
         {
             var transport = CreateTransport();
             var price = transport.CalculatePrice(DistanceKm);
@@ -56,9 +46,7 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.FactoryMethod
         }
     }
 
-    /// <summary>
-    /// Concrete Creator for airplane reservations.
-    /// </summary>
+    // Concrete Creator for airplane reservations
     public sealed class AirplaneReservation : TransportReservation
     {
         public AirplaneReservation(string customerName, int distanceKm)
@@ -69,9 +57,8 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.FactoryMethod
         protected override ITransport CreateTransport() => new AirplaneTransport();
     }
 
-    /// <summary>
-    /// Concrete Creator for train reservations.
-    /// </summary>
+
+    // Concrete Creator for train reservations
     public sealed class TrainReservation : TransportReservation
     {
         public TrainReservation(string customerName, int distanceKm)
@@ -82,9 +69,7 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.FactoryMethod
         protected override ITransport CreateTransport() => new TrainTransport();
     }
 
-    /// <summary>
-    /// Concrete Creator for bus reservations.
-    /// </summary>
+    // Concrete Creator for bus reservations.
     public sealed class BusReservation : TransportReservation
     {
         public BusReservation(string customerName, int distanceKm)
@@ -95,9 +80,6 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.FactoryMethod
         protected override ITransport CreateTransport() => new BusTransport();
     }
 
-    /// <summary>
-    /// Simple DTO returned to clients when a reservation is made.
-    /// </summary>
     public sealed record ReservationSummary(
         string CustomerName,
         string TransportName,
@@ -105,11 +87,91 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.FactoryMethod
         decimal Price,
         string TransportDescription);
 
-    /// <summary>
-    /// Optional helper class that selects the correct concrete Creator
-    /// based on a TransportType value. This keeps higher layers
-    /// independent from concrete reservation classes.
-    /// </summary>
+    // ticket classes for abstract factory
+    public enum TicketClass
+    {
+        Economy,
+        FirstClass
+    }
+
+    // abstract factory interface - creates transport reservations depending on ticket class
+    public interface IReservationFactory
+    {
+        TransportReservation CreateReservation(
+            TransportType type,
+            string customerName,
+            int distanceKm);
+    }
+
+    // econ/first‑class decorators that modify pricing
+    public class EconomyTicketReservation : TransportReservation
+    {
+        private readonly TransportReservation _inner;
+        public EconomyTicketReservation(TransportReservation inner)
+            : base(inner.CustomerName, inner.DistanceKm)
+        {
+            _inner = inner;
+        }
+
+        protected override ITransport CreateTransport()
+        {
+            throw new NotSupportedException();
+        }
+
+        public override ReservationSummary MakeReservation()
+        {
+            var summary = _inner.MakeReservation();
+            return summary with { Price = summary.Price * 0.9m };
+        }
+    }
+
+    public class FirstClassTicketReservation : TransportReservation
+    {
+        private readonly TransportReservation _inner;
+        public FirstClassTicketReservation(TransportReservation inner)
+            : base(inner.CustomerName, inner.DistanceKm)
+        {
+            _inner = inner;
+        }
+
+        protected override ITransport CreateTransport()
+        {
+            throw new NotSupportedException();
+        }
+
+        public override ReservationSummary MakeReservation()
+        {
+            var summary = _inner.MakeReservation();
+            return summary with { Price = summary.Price * 1.5m };
+        }
+    }
+
+    // concrete factories implementing the abstract factory
+    public class EconomyReservationFactory : IReservationFactory
+    {
+        public TransportReservation CreateReservation(
+            TransportType type,
+            string customerName,
+            int distanceKm)
+        {
+            var baseRes = TransportReservationFactory.CreateReservation(type, customerName, distanceKm);
+            return new EconomyTicketReservation(baseRes);
+        }
+    }
+
+    public class FirstClassReservationFactory : IReservationFactory
+    {
+        public TransportReservation CreateReservation(
+            TransportType type,
+            string customerName,
+            int distanceKm)
+        {
+            var baseRes = TransportReservationFactory.CreateReservation(type, customerName, distanceKm);
+            return new FirstClassTicketReservation(baseRes);
+        }
+    }
+
+    // factory takes transporttype and other reservation details, creates the appropriate reservation subclass, and returns it as a base class reference
     public static class TransportReservationFactory
     {
         public static TransportReservation CreateReservation(

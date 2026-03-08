@@ -3,7 +3,7 @@
 "ServerUrl": "https://localhost:55970",
 "RedirectUrl": "",
 "LaunchCommand": "npm run dev",
-"WorkingDirectory": "C:\\Users\\Acer\\source\\repos\\Airport_TMPPP_1.0\\Airport_TMPPP_1.0.Server\\..\\airport_tmppp_1.0.client",
+"WorkingDirectory": "C:\\Users\\Acer\\Desktop\\Airport_TMPPP_1.0\\Airport_TMPPP_1.0.Server\\..\\airport_tmppp_1.0.client",
 "MaxTimeoutInSeconds": "120",
 "KeepRunning": "false"
 }
