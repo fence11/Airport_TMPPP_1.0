@@ -1,0 +1,68 @@
+@startuml Builder
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+' =======================
+' DESIGN PATTERNS - BUILDER
+' =======================
+package "BusinessLogic.DesignPatterns.Builder" {
+
+  class TravelPackage {
+    +CustomerName : string
+    +Destination : string
+    +StartDate : DateTime
+    +EndDate : DateTime
+    +Transport : string
+    +Accommodation : string
+    +Activities : IReadOnlyList<string>
+    +Price : decimal
+  }
+
+  interface ITravelPackageBuilder {
+    +ForCustomer(customerName : string) : ITravelPackageBuilder
+    +ToDestination(destination : string) : ITravelPackageBuilder
+    +WithDates(startDate : DateTime, endDate : DateTime) : ITravelPackageBuilder
+    +WithTransport(transportDescription : string) : ITravelPackageBuilder
+    +WithAccommodation(accommodationDescription : string) : ITravelPackageBuilder
+    +AddActivity(activity : string) : ITravelPackageBuilder
+    +WithBasePrice(price : decimal) : ITravelPackageBuilder
+    +Build() : TravelPackage
+  }
+
+  class CustomTravelPackageBuilder {
+    -_customerName : string
+    -_destination : string
+    -_startDate : DateTime
+    -_endDate : DateTime
+    -_transport : string
+    -_accommodation : string
+    -_activities : List<string>
+    -_price : decimal
+    +ForCustomer(customerName : string) : ITravelPackageBuilder
+    +ToDestination(destination : string) : ITravelPackageBuilder
+    +WithDates(startDate : DateTime, endDate : DateTime) : ITravelPackageBuilder
+    +WithTransport(transportDescription : string) : ITravelPackageBuilder
+    +WithAccommodation(accommodationDescription : string) : ITravelPackageBuilder
+    +AddActivity(activity : string) : ITravelPackageBuilder
+    +WithBasePrice(price : decimal) : ITravelPackageBuilder
+    +Build() : TravelPackage
+  }
+
+  class TravelDirector {
+    +CreateWeekendCityBreak(builder : ITravelPackageBuilder, customerName : string, city : string) : TravelPackage
+    +CreateAllInclusiveBeachHoliday(builder : ITravelPackageBuilder, customerName : string, resort : string) : TravelPackage
+  }
+
+  ITravelPackageBuilder <|.. CustomTravelPackageBuilder
+  CustomTravelPackageBuilder --> TravelPackage : builds
+  TravelDirector --> ITravelPackageBuilder : orchestrates steps
+  TravelDirector --> TravelPackage : returns
+}
+
+@enduml
+

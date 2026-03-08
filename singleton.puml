@@ -1,0 +1,35 @@
+@startuml Singleton
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+' =======================
+' DESIGN PATTERNS - SINGLETON
+' =======================
+package "BusinessLogic.DesignPatterns.Singleton" {
+
+  class DatabaseConnectionManager {
+    -_instance : Lazy<DatabaseConnectionManager>
+    -_syncRoot : object
+    +{static} Instance : DatabaseConnectionManager
+    -DatabaseConnectionManager()
+    +ConnectionString : string
+    +ConnectionId : string
+    +LastUsedUtc : DateTime
+    +Configure(connectionString : string) : void
+    +ExecuteCommand(sql : string) : void
+  }
+
+  note right of DatabaseConnectionManager
+    - Single, globally accessible instance
+    - Private constructor
+    - Lazy, thread-safe initialization
+  end note
+}
+
+@enduml
+

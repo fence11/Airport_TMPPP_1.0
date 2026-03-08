@@ -1,0 +1,46 @@
+@startuml Prototype
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+' =======================
+' DESIGN PATTERNS - PROTOTYPE
+' =======================
+package "BusinessLogic.DesignPatterns.Prototype" {
+
+  interface IPrototype<T> {
+    +ShallowClone() : T
+    +DeepClone() : T
+  }
+
+  class TravelDocument {
+    +Title : string
+    +PassengerName : string
+    +Destination : string
+    +TravelDate : DateTime
+    +Metadata : IDictionary<string,string>
+    +Notes : IList<string>
+    +TravelDocument(title : string, passengerName : string, destination : string, travelDate : DateTime, metadata : IDictionary<string,string>, notes : IList<string>)
+    +ShallowClone() : TravelDocument
+    +DeepClone() : TravelDocument
+  }
+
+  class TravelDocumentRegistry {
+    -_prototypes : Dictionary<string, TravelDocument>
+    +Register(key : string, prototype : TravelDocument) : void
+    +Unregister(key : string) : bool
+    +CreateFromPrototype(key : string, deepClone : bool = true) : TravelDocument
+  }
+
+  IPrototype<TravelDocument> <|.. TravelDocument
+
+  TravelDocumentRegistry --> TravelDocument : stores prototypes
+  TravelDocumentRegistry ..> IPrototype<TravelDocument> : uses clone()
+}
+
+@enduml
+
