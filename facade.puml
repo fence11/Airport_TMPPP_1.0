@@ -1,0 +1,77 @@
+@startuml facade
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+title Façade Pattern – Hotel Reservation System
+
+package "BusinessLogic.DesignPatterns.Facade" {
+
+  ' ── Subsystem classes (hidden behind the façade) ──────────
+  class RoomSearchService {
+    +FindAvailableRooms(checkIn : DateTime, checkOut : DateTime, guestCount : int) : IEnumerable<RoomInfo>
+    +GetRoomInfo(roomTypeCode : string) : RoomInfo?
+  }
+
+  class AvailabilityService {
+    +IsAvailable(roomTypeCode : string, checkIn : DateTime, checkOut : DateTime) : bool
+    +BlockDates(roomTypeCode : string, checkIn : DateTime, checkOut : DateTime) : void
+    +ReleaseDates(roomTypeCode : string, checkIn : DateTime, checkOut : DateTime) : void
+  }
+
+  class HotelPaymentService {
+    +Charge(guestName : string, totalAmount : decimal, paymentMethod : string) : HotelPaymentResult
+    +Refund(transactionId : string, amount : decimal) : bool
+  }
+
+  class NotificationService {
+    +SendConfirmationEmail(email : string, booking : HotelBookingConfirmation) : void
+    +SendConfirmationSms(phone : string, bookingRef : string) : void
+    +SendCancellationNotice(email : string, bookingRef : string) : void
+  }
+
+  class BookingRepository {
+    -_store : Dictionary<string, HotelBookingConfirmation>
+    +Save(booking : HotelBookingConfirmation) : HotelBookingConfirmation
+    +Find(reference : string) : HotelBookingConfirmation?
+    +Delete(reference : string) : bool
+  }
+
+  ' ── Façade ────────────────────────────────────────────────
+  class HotelReservationFacade {
+    -_roomSearch   : RoomSearchService
+    -_availability : AvailabilityService
+    -_payment      : HotelPaymentService
+    -_notification : NotificationService
+    -_repository   : BookingRepository
+    +BookRoom(request : HotelBookingRequest) : HotelBookingResult
+    +CancelBooking(bookingReference : string) : bool
+    +SearchRooms(checkIn : DateTime, checkOut : DateTime, guestCount : int) : IEnumerable<RoomInfo>
+  }
+
+  note right of HotelReservationFacade
+    BookRoom() internally coordinates:
+    1. Room lookup
+    2. Capacity check
+    3. Availability check
+    4. Price calculation
+    5. Payment processing
+    6. Date blocking
+    7. Persistence
+    8. Email + SMS notification
+    All hidden from the caller.
+  end note
+
+  ' ── Relationships ─────────────────────────────────────────
+  HotelReservationFacade --> RoomSearchService
+  HotelReservationFacade --> AvailabilityService
+  HotelReservationFacade --> HotelPaymentService
+  HotelReservationFacade --> NotificationService
+  HotelReservationFacade --> BookingRepository
+}
+
+@enduml

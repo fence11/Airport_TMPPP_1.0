@@ -1,0 +1,74 @@
+@startuml composite
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+title Composite Pattern – Airport Restaurant Menu
+
+package "BusinessLogic.DesignPatterns.Composite" {
+
+  ' ── Component (common interface) ──────────────────────────
+  interface IMenuComponent {
+    +Name : string
+    +Description : string
+    +GetPrice() : decimal
+    +Display(depth : int) : void
+    +Add(component : IMenuComponent) : void
+    +Remove(component : IMenuComponent) : void
+    +GetChildren() : IEnumerable<IMenuComponent>
+  }
+
+  ' ── Leaf ──────────────────────────────────────────────────
+  class MenuItem {
+    +Name : string
+    +Description : string
+    +Price : decimal
+    +Category : string
+    +GetPrice() : decimal
+    +Display(depth : int) : void
+  }
+
+  note right of MenuItem
+    Leaf node.
+    Cannot have children.
+    GetPrice() returns its own Price.
+  end note
+
+  ' ── Composite ─────────────────────────────────────────────
+  class MenuSection {
+    -_children : List<IMenuComponent>
+    +Name : string
+    +Description : string
+    +Add(component : IMenuComponent) : void
+    +Remove(component : IMenuComponent) : void
+    +GetChildren() : IEnumerable<IMenuComponent>
+    +GetPrice() : decimal
+    +Display(depth : int) : void
+  }
+
+  note left of MenuSection
+    Composite node.
+    GetPrice() recursively sums
+    all children's prices.
+    Can hold MenuItem leaves
+    AND nested MenuSection composites.
+  end note
+
+  ' ── Factory ───────────────────────────────────────────────
+  class AirportRestaurantMenuFactory {
+    {static} +CreateFullMenu() : MenuSection
+  }
+
+  ' ── Relationships ─────────────────────────────────────────
+  IMenuComponent <|.. MenuItem
+  IMenuComponent <|.. MenuSection
+  MenuSection    o--> "0..*" IMenuComponent : contains
+
+  AirportRestaurantMenuFactory ..> MenuSection : creates
+}
+
+@enduml

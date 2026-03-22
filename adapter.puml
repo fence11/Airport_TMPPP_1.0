@@ -1,0 +1,90 @@
+@startuml adapter
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+title Adapter Pattern – Payment Gateway Integration
+
+package "BusinessLogic.DesignPatterns.Adapter" {
+
+  ' ── Target interface ──────────────────────────────────────
+  interface IPaymentProcessor {
+    +GatewayName : string
+    +Charge(amount : decimal, currency : string, description : string) : PaymentResult
+    +Refund(transactionId : string, amount : decimal) : bool
+  }
+
+  class PaymentResult <<record>> {
+    +Success : bool
+    +TransactionId : string
+    +Message : string
+  }
+
+  ' ── Adaptees (incompatible third-party SDKs) ─────────────
+  class PayPalSdk {
+    +MakePayment(usdAmount : double, payerEmail : string, note : string) : PayPalResponse
+    +IssueRefund(payPalTxId : string, amount : double) : bool
+  }
+
+  class StripeSdk {
+    +CreateCharge(amountCents : long, currency : string, descriptor : string) : StripeChargeResult
+    +CreateRefund(chargeId : string, amountCents : long) : StripeRefundResult
+  }
+
+  class GooglePayApi {
+    +ProcessTransaction(jsonToken : string, totalPrice : decimal, currency : string) : GooglePayResponse
+    +ReverseTransaction(transactionId : string) : bool
+  }
+
+  ' ── Adapters ──────────────────────────────────────────────
+  class PayPalAdapter {
+    -_payPal : PayPalSdk
+    +GatewayName : string
+    +Charge(amount, currency, description) : PaymentResult
+    +Refund(transactionId, amount) : bool
+  }
+
+  class StripeAdapter {
+    -_stripe : StripeSdk
+    +GatewayName : string
+    +Charge(amount, currency, description) : PaymentResult
+    +Refund(transactionId, amount) : bool
+  }
+
+  class GooglePayAdapter {
+    -_googlePay : GooglePayApi
+    +GatewayName : string
+    +Charge(amount, currency, description) : PaymentResult
+    +Refund(transactionId, amount) : bool
+  }
+
+  ' ── Client ────────────────────────────────────────────────
+  class AirportPaymentService {
+    -_processor : IPaymentProcessor
+    +ProcessTicketPurchase(amount : decimal, currency : string, flightNumber : string) : PaymentResult
+    +RequestRefund(transactionId : string, amount : decimal) : bool
+  }
+
+  ' ── Relationships ─────────────────────────────────────────
+  IPaymentProcessor <|.. PayPalAdapter
+  IPaymentProcessor <|.. StripeAdapter
+  IPaymentProcessor <|.. GooglePayAdapter
+
+  PayPalAdapter    --> PayPalSdk    : wraps
+  StripeAdapter    --> StripeSdk    : wraps
+  GooglePayAdapter --> GooglePayApi : wraps
+
+  AirportPaymentService --> IPaymentProcessor : uses
+  IPaymentProcessor      ..> PaymentResult    : returns
+
+  note right of AirportPaymentService
+    Client code only knows IPaymentProcessor.
+    The concrete SDK is hidden inside each adapter.
+  end note
+}
+
+@enduml
