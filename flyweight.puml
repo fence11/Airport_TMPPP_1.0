@@ -1,0 +1,48 @@
+@startuml flyweight
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+package "Flyweight" {
+
+  interface IAirportResourceFlyweight {
+    +ResourceType : string
+    +Zone : string
+    +RenderUsage(contextId : string, flightCode : string, slotUtc : DateTime) : string
+  }
+
+  class AirportResourceFlyweight {
+    +ResourceType : string
+    +Zone : string
+    +RenderUsage(contextId : string, flightCode : string, slotUtc : DateTime) : string
+  }
+
+  class AirportResourceFactory {
+    -_cache : Dictionary<string, IAirportResourceFlyweight>
+    +GetResource(resourceType : string, zone : string) : IAirportResourceFlyweight
+    +SharedObjectCount : int
+  }
+
+  class AirportResourceAssignment <<context>> {
+    +ContextId : string
+    +FlightCode : string
+    +SlotUtc : DateTime
+    +Resource : IAirportResourceFlyweight
+  }
+
+  note right of AirportResourceFactory
+    Gate and runway intrinsic state
+    is reused by key: ResourceType + Zone.
+    Extrinsic state stays in assignment objects.
+  end note
+
+  IAirportResourceFlyweight <|.. AirportResourceFlyweight
+  AirportResourceFactory --> IAirportResourceFlyweight : creates/reuses
+  AirportResourceAssignment --> IAirportResourceFlyweight : references
+}
+
+@enduml

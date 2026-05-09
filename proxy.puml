@@ -1,0 +1,48 @@
+@startuml proxy
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+package "Proxy" {
+
+  interface ISensitiveAirportSystem {
+    +Access(actorRole : string, query : string) : string
+  }
+
+  class AirTrafficControlSystem {
+    +Access(actorRole : string, query : string) : string
+  }
+
+  class SecurityDatabaseSystem {
+    +Access(actorRole : string, query : string) : string
+  }
+
+  class SensitiveSystemProxy {
+    -_realSystem : ISensitiveAirportSystem
+    -_allowedRoles : HashSet<string>
+    +Access(actorRole : string, query : string) : string
+  }
+
+  class AccessClient {
+    +Read(system : ISensitiveAirportSystem, role : string, query : string) : string
+  }
+
+  note right of SensitiveSystemProxy
+    Permission checks happen here.
+    Only allowed roles can reach the
+    real ATC or security systems.
+  end note
+
+  ISensitiveAirportSystem <|.. AirTrafficControlSystem
+  ISensitiveAirportSystem <|.. SecurityDatabaseSystem
+  ISensitiveAirportSystem <|.. SensitiveSystemProxy
+
+  SensitiveSystemProxy --> ISensitiveAirportSystem : controls access to
+  AccessClient --> ISensitiveAirportSystem : uses
+}
+
+@enduml

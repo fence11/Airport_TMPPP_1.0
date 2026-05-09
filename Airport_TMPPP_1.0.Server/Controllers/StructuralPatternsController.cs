@@ -1,6 +1,10 @@
 using Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Adapter;
+using Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Bridge;
 using Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Composite;
+using Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Decorator;
 using Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Facade;
+using Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Flyweight;
+using Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Proxy;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Airport_TMPPP_1._0.Server.Controllers
@@ -149,6 +153,110 @@ namespace Airport_TMPPP_1._0.Server.Controllers
                 : NotFound(new { Error = $"Booking #{bookingReference} not found." });
         }
 
+        // ── FLYWEIGHT ─────────────────────────────────────────────────────────
+
+        [HttpGet("flyweight/resources")]
+        public IActionResult GetFlyweightResources()
+        {
+            var factory = new AirportResourceFactory();
+            var assignments = new List<AirportResourceAssignment>
+            {
+                new("G12", "RO101", DateTime.UtcNow.AddMinutes(25), factory.GetResource("Gate", "Terminal A")),
+                new("G13", "RO102", DateTime.UtcNow.AddMinutes(40), factory.GetResource("Gate", "Terminal A")),
+                new("RWY-1", "FR220", DateTime.UtcNow.AddMinutes(55), factory.GetResource("RunwaySlot", "North Strip")),
+                new("RWY-2", "FR221", DateTime.UtcNow.AddMinutes(70), factory.GetResource("RunwaySlot", "North Strip"))
+            };
+
+            var usage = assignments.Select(a => new FlyweightUsageDto(
+                a.ContextId,
+                a.FlightCode,
+                a.Resource.ResourceType,
+                a.Resource.Zone,
+                a.Resource.RenderUsage(a.ContextId, a.FlightCode, a.SlotUtc)));
+
+            return Ok(new FlyweightDemoResponse(factory.SharedObjectCount, assignments.Count, usage.ToList()));
+        }
+
+        // ── DECORATOR ─────────────────────────────────────────────────────────
+
+        [HttpPost("decorator/booking")]
+        public IActionResult DecorateBooking([FromBody] DecoratorBookingRequest request)
+        {
+            if (request.BasePrice <= 0)
+                return BadRequest("Base price must be positive.");
+
+            IFlightBooking booking = new BaseFlightBooking(request.FlightNumber, request.BasePrice);
+            if (request.AddPriorityBoarding)
+                booking = new PriorityBoardingDecorator(booking);
+            if (request.AddLoungeAccess)
+                booking = new LoungeAccessDecorator(booking);
+
+            return Ok(new DecoratorBookingResponse(booking.Describe(), booking.GetTotalPrice()));
+        }
+
+        // ── BRIDGE ────────────────────────────────────────────────────────────
+
+        [HttpGet("bridge/operations")]
+        public IActionResult RunBridgeOperations(
+            [FromQuery] string airportType = "international",
+            [FromQuery] string operation = "landing",
+            [FromQuery] string identifier = "RO440")
+        {
+            IAirportImplementation implementation = airportType.Trim().ToLowerInvariant() switch
+            {
+                "international" => new InternationalAirportImplementation(),
+                "domestic" => new DomesticAirportImplementation(),
+                "cargo" => new CargoAirportImplementation(),
+                _ => null!
+            };
+
+            if (implementation is null)
+                return BadRequest("airportType must be: international | domestic | cargo");
+
+            AirportOperation abstraction = operation.Trim().ToLowerInvariant() switch
+            {
+                "landing" => new LandingOperation(implementation),
+                "security" => new SecurityOperation(implementation),
+                _ => null!
+            };
+
+            if (abstraction is null)
+                return BadRequest("operation must be: landing | security");
+
+            return Ok(new BridgeOperationResponse(
+                implementation.AirportType,
+                operation,
+                abstraction.Operate(identifier)));
+        }
+
+        // ── PROXY ─────────────────────────────────────────────────────────────
+
+        [HttpGet("proxy/access")]
+        public IActionResult AccessSensitiveSystems(
+            [FromQuery] string system = "atc",
+            [FromQuery] string role = "operator",
+            [FromQuery] string query = "active-flights")
+        {
+            ISensitiveAirportSystem realSystem = system.Trim().ToLowerInvariant() switch
+            {
+                "atc" => new AirTrafficControlSystem(),
+                "securitydb" => new SecurityDatabaseSystem(),
+                _ => null!
+            };
+
+            if (realSystem is null)
+                return BadRequest("system must be: atc | securitydb");
+
+            var proxy = system.Trim().ToLowerInvariant() switch
+            {
+                "atc" => new SensitiveSystemProxy(realSystem, new[] { "controller", "supervisor" }),
+                "securitydb" => new SensitiveSystemProxy(realSystem, new[] { "security", "admin" }),
+                _ => null!
+            };
+
+            return Ok(new ProxyAccessResponse(system, role, proxy!.Access(role, query)));
+        }
+
         // ── PRIVATE HELPERS ───────────────────────────────────────────────────
 
         private static MenuItemDto ToDto(IMenuComponent component)
@@ -213,4 +321,36 @@ namespace Airport_TMPPP_1._0.Server.Controllers
         DateTime CheckIn,
         DateTime CheckOut,
         string   PaymentMethod = "Credit Card");
+
+    public sealed record FlyweightUsageDto(
+        string ContextId,
+        string FlightCode,
+        string ResourceType,
+        string Zone,
+        string Details);
+
+    public sealed record FlyweightDemoResponse(
+        int SharedObjects,
+        int TotalAssignments,
+        List<FlyweightUsageDto> Usages);
+
+    public sealed record DecoratorBookingRequest(
+        string FlightNumber,
+        decimal BasePrice,
+        bool AddPriorityBoarding,
+        bool AddLoungeAccess);
+
+    public sealed record DecoratorBookingResponse(
+        string Description,
+        decimal TotalPrice);
+
+    public sealed record BridgeOperationResponse(
+        string AirportType,
+        string Operation,
+        string Result);
+
+    public sealed record ProxyAccessResponse(
+        string System,
+        string Role,
+        string Result);
 }

@@ -114,3 +114,95 @@ export const cancelBooking = async (bookingReference: string): Promise<void> => 
     `/api/StructuralPatterns/facade/cancel/${bookingReference}`
   );
 };
+
+// ── Flyweight ────────────────────────────────────────────────────────────────
+
+export type FlyweightUsage = {
+  contextId: string;
+  flightCode: string;
+  resourceType: string;
+  zone: string;
+  details: string;
+};
+
+export type FlyweightDemoResponse = {
+  sharedObjects: number;
+  totalAssignments: number;
+  usages: FlyweightUsage[];
+};
+
+export const getFlyweightResources = async (): Promise<FlyweightDemoResponse> => {
+  const res = await apiClient.get<FlyweightDemoResponse>(
+    "/api/StructuralPatterns/flyweight/resources"
+  );
+  return res.data;
+};
+
+// ── Decorator ────────────────────────────────────────────────────────────────
+
+export type DecoratorBookingRequest = {
+  flightNumber: string;
+  basePrice: number;
+  addPriorityBoarding: boolean;
+  addLoungeAccess: boolean;
+};
+
+export type DecoratorBookingResponse = {
+  description: string;
+  totalPrice: number;
+};
+
+export const decorateBooking = async (
+  req: DecoratorBookingRequest
+): Promise<DecoratorBookingResponse> => {
+  const res = await apiClient.post<DecoratorBookingResponse>(
+    "/api/StructuralPatterns/decorator/booking",
+    req
+  );
+  return res.data;
+};
+
+// ── Bridge ───────────────────────────────────────────────────────────────────
+
+export type AirportKind = "international" | "domestic" | "cargo";
+export type OperationKind = "landing" | "security";
+
+export type BridgeOperationResponse = {
+  airportType: string;
+  operation: string;
+  result: string;
+};
+
+export const runBridgeOperation = async (
+  airportType: AirportKind,
+  operation: OperationKind,
+  identifier: string
+): Promise<BridgeOperationResponse> => {
+  const res = await apiClient.get<BridgeOperationResponse>(
+    "/api/StructuralPatterns/bridge/operations",
+    { params: { airportType, operation, identifier } }
+  );
+  return res.data;
+};
+
+// ── Proxy ────────────────────────────────────────────────────────────────────
+
+export type ProxySystem = "atc" | "securitydb";
+
+export type ProxyAccessResponse = {
+  system: string;
+  role: string;
+  result: string;
+};
+
+export const proxyAccess = async (
+  system: ProxySystem,
+  role: string,
+  query: string
+): Promise<ProxyAccessResponse> => {
+  const res = await apiClient.get<ProxyAccessResponse>(
+    "/api/StructuralPatterns/proxy/access",
+    { params: { system, role, query } }
+  );
+  return res.data;
+};

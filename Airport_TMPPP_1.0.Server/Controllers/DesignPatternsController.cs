@@ -1,4 +1,5 @@
 using Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Builder;
+using Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.AbstractFactory;
 using Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Prototype;
 using Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Singleton;
 using Microsoft.AspNetCore.Mvc;
@@ -9,9 +10,6 @@ namespace Airport_TMPPP_1._0.Server.Controllers
     [Route("api/[controller]")]
     public class DesignPatternsController : ControllerBase
     {
-        /// <summary>
-        /// Demonstrates the Builder pattern by constructing a weekend city-break package.
-        /// </summary>
         [HttpGet("builder/weekend")]
         public ActionResult<TravelPackageDto> GetWeekendCityBreak(
             [FromQuery] string customerName,
@@ -29,9 +27,6 @@ namespace Airport_TMPPP_1._0.Server.Controllers
             return Ok(TravelPackageDto.FromDomain(package, "Builder: Weekend city break"));
         }
 
-        /// <summary>
-        /// Demonstrates the Builder pattern by constructing an all-inclusive beach holiday.
-        /// </summary>
         [HttpGet("builder/beach")]
         public ActionResult<TravelPackageDto> GetBeachHoliday(
             [FromQuery] string customerName,
@@ -49,9 +44,6 @@ namespace Airport_TMPPP_1._0.Server.Controllers
             return Ok(TravelPackageDto.FromDomain(package, "Builder: All-inclusive beach holiday"));
         }
 
-        /// <summary>
-        /// Demonstrates the Prototype pattern by creating a base document and cloning it.
-        /// </summary>
         [HttpGet("prototype")]
         public ActionResult<PrototypeDemoResponse> GetPrototypeDemo()
         {
@@ -79,10 +71,6 @@ namespace Airport_TMPPP_1._0.Server.Controllers
             return Ok(response);
         }
 
-        /// <summary>
-        /// Demonstrates the Singleton pattern by returning information about the shared
-        /// database connection manager instance.
-        /// </summary>
         [HttpGet("singleton")]
         public ActionResult<DatabaseConnectionInfoDto> GetSingletonInfo()
         {
@@ -99,6 +87,37 @@ namespace Airport_TMPPP_1._0.Server.Controllers
             };
 
             return Ok(dto);
+        }
+
+        [HttpGet("abstract-factory/service-bundle")]
+        public ActionResult<AbstractFactoryBundleDto> GetAbstractFactoryBundle([FromQuery] string profile = "business")
+        {
+            var normalizedProfile = profile.Trim().ToLowerInvariant();
+
+            IAirportServiceBundleFactory? factory = normalizedProfile switch
+            {
+                "business" => new BusinessTravelerFactory(),
+                "family" => new FamilyTravelerFactory(),
+                _ => null
+            };
+
+            if (factory is null)
+                return BadRequest("Use profile=business or profile=family.");
+
+            var lounge = factory.CreateLoungeAccess();
+            var transfer = factory.CreateTransfer();
+            var insurance = factory.CreateInsurance();
+
+            return Ok(new AbstractFactoryBundleDto
+            {
+                Profile = normalizedProfile,
+                LoungeName = lounge.Name,
+                LoungeBenefits = lounge.Benefits,
+                TransferType = transfer.Type,
+                TransferDetails = transfer.Details,
+                InsurancePlan = insurance.Plan,
+                InsuranceCoverage = insurance.CoverageSummary
+            });
         }
     }
 
@@ -161,6 +180,17 @@ namespace Airport_TMPPP_1._0.Server.Controllers
         public string ConnectionId { get; set; } = string.Empty;
         public string ConnectionString { get; set; } = string.Empty;
         public DateTime LastUsedUtc { get; set; }
+    }
+
+    public sealed class AbstractFactoryBundleDto
+    {
+        public string Profile { get; set; } = string.Empty;
+        public string LoungeName { get; set; } = string.Empty;
+        public string LoungeBenefits { get; set; } = string.Empty;
+        public string TransferType { get; set; } = string.Empty;
+        public string TransferDetails { get; set; } = string.Empty;
+        public string InsurancePlan { get; set; } = string.Empty;
+        public string InsuranceCoverage { get; set; } = string.Empty;
     }
 }
 

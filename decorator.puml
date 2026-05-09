@@ -1,0 +1,52 @@
+@startuml decorator
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+package "Decorator" {
+
+  interface IFlightBooking {
+    +Describe() : string
+    +GetTotalPrice() : decimal
+  }
+
+  class BaseFlightBooking {
+    -_flightNumber : string
+    -_basePrice : decimal
+    +Describe() : string
+    +GetTotalPrice() : decimal
+  }
+
+  abstract class BookingDecorator {
+    #Inner : IFlightBooking
+    +Describe() : string
+    +GetTotalPrice() : decimal
+  }
+
+  class PriorityBoardingDecorator {
+    +Describe() : string
+    +GetTotalPrice() : decimal
+  }
+
+  class LoungeAccessDecorator {
+    +Describe() : string
+    +GetTotalPrice() : decimal
+  }
+
+  note right of BookingDecorator
+    Decorators wrap another booking
+    and add behavior dynamically.
+  end note
+
+  IFlightBooking <|.. BaseFlightBooking
+  IFlightBooking <|.. BookingDecorator
+  BookingDecorator <|-- PriorityBoardingDecorator
+  BookingDecorator <|-- LoungeAccessDecorator
+  BookingDecorator o--> IFlightBooking : wraps
+}
+
+@enduml

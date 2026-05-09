@@ -1,0 +1,48 @@
+ADAPTER - convertește interfața unei clase existente în interfața așteptată de client
+_____________________________S — Adapter doar traduce de la o interfață la alta
+O — Adaugi noi adaptoare fără a modifica codul client sau clasele existente
+L — Adapter implementează ITarget și poate fi folosit oriunde e așteptat acesta
+I — Dacă ITarget e compactă, clientul nu e forțat să depindă de metode inutile
+D — Clientul depinde de ITarget (abstracțiune), nu de Adaptee (concret)
+ 
+
+avantaj
+•	Integrezi sisteme incompatibile fără a modifica codul existent
+•	Separare clară: logica de adaptare izolată într-o singură clasă
+
+dezavantaj
+•	Crește numărul de clase 
+•	Dacă Adaptee are multe metode, Adapter devine mare și greu de menținut
+
+
+COMPOSITE - organizează obiectele într-o structură de arbore, clienții tratează obiectele individuale și colecțiile uniform — prin aceeași interfață
+_____________________________
+S —	Leaf gestionează comportamentul real; Composite gestionează copiii — responsabilități separate
+O — Adaugi noi tipuri de frunze sau composite fără a modifica codul client
+L — Leaf și Composite sunt interschimbabile — ambele implementează IComponent
+I — ⚠IComponent poate conține metode Add/Remove inutile pentru Leaf — Leaf trebuie să le arunce ca excepție sau să le ignore
+D — Clientul depinde de IComponent (abstracțiune), nu de Leaf sau Composite concrete
+
+avantaj
+•	Cod client simplu — tratează frunze și composite identic
+•	Ușor de extins cu noi tipuri de componente
+
+dezavantaj
+•	Interfața comună poate impune metode inutile pentru Leaf (violarea ISP)
+•	Debugging dificil în arbori adânci 
+
+FACADE - șablon de proiectare care ascunde complexitatea și oferă un punct unic de intrare pentru operațiile frecvent folosite
+_____________________________
+S — ⚠Façade orchestrează mai multe subsisteme — poate deveni mare dacă subsistemele sunt prea multe (God Object risc)
+O — ⚠Adăugarea de funcționalitate nouă necesită modificarea Façade — deși subsistemele rămân nemodificate
+L — Dacă Façade implementează o interfață, poate fi înlocuită cu alte implementări
+I — Façade expune doar metodele relevante clientului — ascunde metodele interne ale subsistemelor
+D — ⚠Façade depinde direct de clasele concrete ale subsistemelor — cuplaj intern ridicat (acceptabil pentru acest pattern)
+
+avantaj
+•	Simplifică utilizarea unui subsistem complex
+•	Decuplează codul client de detaliile de implementare
+
+dezavantaj
+•	Adăugarea de funcționalitate necesită modificarea Façade (OCP parțial)
+•	Risc de God Object — Façade poate acumula prea multă logică

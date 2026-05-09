@@ -7,9 +7,8 @@ skinparam ClassFontSize 12
 skinparam ClassFontName "Segoe UI"
 skinparam Linetype ortho
 
-title Adapter Pattern – Payment Gateway Integration
 
-package "BusinessLogic.DesignPatterns.Adapter" {
+package "Adapter" {
 
   ' ── Target interface ──────────────────────────────────────
   interface IPaymentProcessor {

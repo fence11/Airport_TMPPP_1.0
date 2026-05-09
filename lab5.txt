@@ -1,0 +1,69 @@
+Flyweight – șablon structural care reduce consumul de memorie prin reutilizarea stării comune și separarea celei unice (extrinseci).
+
+S – ✔ FlyweightFactory gestionează cache-ul; Flyweight lucrează doar cu starea comună  
+O – ⚠ Adăugarea unui nou tip necesită modificarea FlyweightFactory  
+L – ✔ Orice Flyweight poate fi substituit prin IFlyweight  
+I – ✔ Interfața conține doar metodele necesare  
+D – ✔ Clientul depinde de IFlyweight și FlyweightFactory  
+
+Avantaje:
+- Reduce consumul de memorie  
+- Stare comună centralizată și consistentă  
+
+Dezavantaje:
+- Separarea intrinsec/extrinsec nu e mereu naturală  
+- Ineficient dacă există puține date comune  
+
+==========================
+
+Decorator – adaugă comportament unui obiect fără a modifica clasa sau a crea subclase.
+
+S – ✔ Fiecare decorator are o singură responsabilitate  
+O – ✔ Se pot adăuga decoratori fără a modifica baza  
+L – ✔ Decoratorul poate înlocui obiectul de bază  
+I – ✔ Nu modifică interfața de bază  
+D – ✔ Depinde de IComponent  
+
+Avantaje:
+- Ușor de testat (decoratori izolați)  
+- Combinare flexibilă a comportamentelor  
+
+Dezavantaje:
+- Ordinea decoratoarelor contează  
+- Debugging mai dificil (stack trace lung)  
+
+==========================
+
+Bridge – separă abstractizarea de implementare.
+
+S – ✔ Abstractizarea = logică; implementarea = detalii  
+O – ✔ Extensibil fără modificări existente  
+L – ✔ Implementările pot substitui interfața  
+I – ✔ Interfață minimală  
+D – ✔ Abstractizarea depinde de interfață  
+
+Avantaje:
+- N + M în loc de N × M combinații  
+- Ușor de extins  
+
+Dezavantaje:
+- Crește complexitatea  
+- Over-engineering pentru cazuri simple  
+
+==========================
+
+Proxy – oferă un substitut care controlează accesul la obiectul real (ex: Virtual, Protection, Remote, Caching, Logging).
+
+S – ✔ Fiecare proxy are un rol clar  
+O – ✔ Se adaugă fără modificarea clientului sau obiectului
+L – ✔ Implementează aceeași interfață  
+I – ✔ Nu schimbă interfața, doar interceptează  
+D – ✔ Clientul depinde de abstracție  
+
+Avantaje:
+- Controlează accesul fără a modifica clientul  
+- Ușor de testat (mock la proxy)  
+
+Dezavantaje:
+- Cache-ul poate returna date expirate  
+- Debugging mai dificil (răspunsul vine din proxy, nu din obiectul real)

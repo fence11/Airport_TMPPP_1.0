@@ -1,0 +1,51 @@
+@startuml bridge
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+package "Bridge" {
+
+  interface IAirportImplementation {
+    +AirportType : string
+    +ExecuteLanding(flightCode : string) : string
+    +ExecuteSecurityScreening(passengerName : string) : string
+  }
+
+  class InternationalAirportImplementation
+  class DomesticAirportImplementation
+  class CargoAirportImplementation
+
+  abstract class AirportOperation {
+    #Implementation : IAirportImplementation
+    +Operate(identifier : string) : string
+  }
+
+  class LandingOperation {
+    +Operate(identifier : string) : string
+  }
+
+  class SecurityOperation {
+    +Operate(identifier : string) : string
+  }
+
+  note right of AirportOperation
+    Abstraction side:
+    airport operations.
+    Can vary independently from
+    airport implementation types.
+  end note
+
+  IAirportImplementation <|.. InternationalAirportImplementation
+  IAirportImplementation <|.. DomesticAirportImplementation
+  IAirportImplementation <|.. CargoAirportImplementation
+
+  AirportOperation <|-- LandingOperation
+  AirportOperation <|-- SecurityOperation
+  AirportOperation o--> IAirportImplementation : bridge reference
+}
+
+@enduml

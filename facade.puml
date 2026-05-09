@@ -7,9 +7,8 @@ skinparam ClassFontSize 12
 skinparam ClassFontName "Segoe UI"
 skinparam Linetype ortho
 
-title Façade Pattern – Hotel Reservation System
 
-package "BusinessLogic.DesignPatterns.Facade" {
+package "Facade" {
 
   ' ── Subsystem classes (hidden behind the façade) ──────────
   class RoomSearchService {

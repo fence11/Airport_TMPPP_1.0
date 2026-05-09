@@ -10,7 +10,7 @@ skinparam Linetype ortho
 ' =======================
 ' DESIGN PATTERNS - BUILDER
 ' =======================
-package "BusinessLogic.DesignPatterns.Builder" {
+package "Builder" {
 
   class TravelPackage {
     +CustomerName : string

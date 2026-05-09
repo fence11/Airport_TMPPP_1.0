@@ -10,9 +10,9 @@ skinparam Linetype ortho
 ' =======================
 ' DESIGN PATTERNS - PROTOTYPE
 ' =======================
-package "BusinessLogic.DesignPatterns.Prototype" {
+package "Prototype" {
 
-  interface IPrototype<T> {
+  interface "IPrototype<T>" as IPrototype {
     +ShallowClone() : T
     +DeepClone() : T
   }
@@ -36,11 +36,9 @@ package "BusinessLogic.DesignPatterns.Prototype" {
     +CreateFromPrototype(key : string, deepClone : bool = true) : TravelDocument
   }
 
-  IPrototype<TravelDocument> <|.. TravelDocument
-
+  IPrototype <|.. TravelDocument
   TravelDocumentRegistry --> TravelDocument : stores prototypes
-  TravelDocumentRegistry ..> IPrototype<TravelDocument> : uses clone()
+  TravelDocumentRegistry ..> IPrototype : uses clone()
 }
 
 @enduml
-

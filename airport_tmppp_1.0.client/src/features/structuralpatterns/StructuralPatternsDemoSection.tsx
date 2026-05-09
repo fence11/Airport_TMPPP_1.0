@@ -6,11 +6,22 @@ import {
   searchRooms,
   bookRoom,
   cancelBooking,
+  getFlyweightResources,
+  decorateBooking,
+  runBridgeOperation,
+  proxyAccess,
   type Gateway,
   type AdapterPaymentResponse,
   type MenuItemDto,
   type RoomInfo,
   type BookingConfirmation,
+  type FlyweightDemoResponse,
+  type DecoratorBookingResponse,
+  type AirportKind,
+  type OperationKind,
+  type BridgeOperationResponse,
+  type ProxySystem,
+  type ProxyAccessResponse,
 } from "../../api/structuralPatternsApi";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -115,6 +126,31 @@ const ResultBox = ({ children }: { children: React.ReactNode }) => (
     }}
   >
     {children}
+  </div>
+);
+
+const CodeCallout = ({
+  title,
+  lines,
+  color,
+}: {
+  title: string;
+  lines: string[];
+  color: string;
+}) => (
+  <div
+    style={{
+      border: `1px solid ${color}`,
+      borderRadius: "8px",
+      padding: "0.7rem 0.8rem",
+      background: "#0e0e1a",
+      marginBottom: "0.65rem",
+    }}
+  >
+    <div style={{ color, fontWeight: 700, marginBottom: "0.4rem", fontSize: "0.82rem" }}>{title}</div>
+    <pre style={{ margin: 0, color: "#bbb", fontSize: "0.78rem", whiteSpace: "pre-wrap", lineHeight: 1.45 }}>
+      {lines.join("\n")}
+    </pre>
   </div>
 );
 
@@ -624,6 +660,232 @@ const FacadeSection = () => {
   );
 };
 
+const FlyweightSection = () => {
+  const [result, setResult] = useState<FlyweightDemoResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const runDemo = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      setResult(await getFlyweightResources());
+    } catch {
+      setError("Flyweight demo failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <SectionCard
+      title="Shared Gate and Runway Resources"
+      badge="Flyweight"
+      badgeColor="#00838f"
+      description="Gate and runway intrinsic data is cached and reused, while each assignment keeps only external context like flight and slot."
+    >
+      <button onClick={runDemo} disabled={loading} style={btnStyle(loading, "#00838f")}>
+        {loading ? "Loading..." : "Run Flyweight"}
+      </button>
+      {error && <p style={{ color: "#ef5350", marginTop: "0.75rem" }}>{error}</p>}
+      {result && (
+        <ResultBox>
+          <div><span style={{ color: "#666" }}>Assignments: </span>{result.totalAssignments}</div>
+          <div><span style={{ color: "#666" }}>Shared objects: </span><strong>{result.sharedObjects}</strong></div>
+          <div style={{ marginTop: "0.55rem", color: "#aaa" }}>
+            {result.usages.map((u, i) => (
+              <div key={`${u.contextId}-${i}`}>- {u.details}</div>
+            ))}
+          </div>
+        </ResultBox>
+      )}
+    </SectionCard>
+  );
+};
+
+const DecoratorSection = () => {
+  const [flightNumber, setFlightNumber] = useState("RO321");
+  const [basePrice, setBasePrice] = useState("220");
+  const [priority, setPriority] = useState(true);
+  const [lounge, setLounge] = useState(false);
+  const [result, setResult] = useState<DecoratorBookingResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const runDemo = async () => {
+    setError(null);
+    setResult(null);
+    const price = parseFloat(basePrice);
+    if (!flightNumber.trim() || Number.isNaN(price) || price <= 0) {
+      setError("Use a valid flight number and base price.");
+      return;
+    }
+    setLoading(true);
+    try {
+      setResult(
+        await decorateBooking({
+          flightNumber: flightNumber.trim(),
+          basePrice: price,
+          addPriorityBoarding: priority,
+          addLoungeAccess: lounge,
+        })
+      );
+    } catch {
+      setError("Decorator demo failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <SectionCard
+      title="Flight Booking Add-ons"
+      badge="Decorator"
+      badgeColor="#6d4c41"
+      description="Add-ons are layered dynamically over a base booking without changing its class."
+    >
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "0.5rem" }}>
+        <Field label="Flight number">
+          <input style={inputStyle} value={flightNumber} onChange={(e) => setFlightNumber(e.target.value)} />
+        </Field>
+        <Field label="Base price">
+          <input style={inputStyle} type="number" min={1} value={basePrice} onChange={(e) => setBasePrice(e.target.value)} />
+        </Field>
+      </div>
+      <div style={{ display: "flex", gap: "1rem", marginBottom: "0.75rem", color: "#bbb", fontSize: "0.85rem" }}>
+        <label><input type="checkbox" checked={priority} onChange={(e) => setPriority(e.target.checked)} /> Priority boarding</label>
+        <label><input type="checkbox" checked={lounge} onChange={(e) => setLounge(e.target.checked)} /> Lounge access</label>
+      </div>
+      <button onClick={runDemo} disabled={loading} style={btnStyle(loading, "#6d4c41")}>
+        {loading ? "Applying..." : "Run Decorator"}
+      </button>
+      {error && <p style={{ color: "#ef5350", marginTop: "0.75rem" }}>{error}</p>}
+      {result && (
+        <ResultBox>
+          <div><span style={{ color: "#666" }}>Description: </span>{result.description}</div>
+          <div><span style={{ color: "#666" }}>Total: </span><strong style={{ color: "#81c784" }}>{result.totalPrice.toFixed(2)}</strong></div>
+        </ResultBox>
+      )}
+    </SectionCard>
+  );
+};
+
+const BridgeSection = () => {
+  const [airportType, setAirportType] = useState<AirportKind>("international");
+  const [operation, setOperation] = useState<OperationKind>("landing");
+  const [identifier, setIdentifier] = useState("RO440");
+  const [result, setResult] = useState<BridgeOperationResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const runDemo = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      setResult(await runBridgeOperation(airportType, operation, identifier.trim() || "RO440"));
+    } catch {
+      setError("Bridge demo failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <SectionCard
+      title="Airport Operations by Type"
+      badge="Bridge"
+      badgeColor="#283593"
+      description="Abstractions (Landing/Security operation) are independent from airport implementations (International/Domestic/Cargo)."
+    >
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "0.5rem" }}>
+        <Field label="Airport type">
+          <select style={inputStyle} value={airportType} onChange={(e) => setAirportType(e.target.value as AirportKind)}>
+            <option value="international">International</option>
+            <option value="domestic">Domestic</option>
+            <option value="cargo">Cargo</option>
+          </select>
+        </Field>
+        <Field label="Operation">
+          <select style={inputStyle} value={operation} onChange={(e) => setOperation(e.target.value as OperationKind)}>
+            <option value="landing">Landing</option>
+            <option value="security">Security</option>
+          </select>
+        </Field>
+        <Field label="Identifier">
+          <input style={inputStyle} value={identifier} onChange={(e) => setIdentifier(e.target.value)} />
+        </Field>
+      </div>
+      <button onClick={runDemo} disabled={loading} style={btnStyle(loading, "#283593")}>
+        {loading ? "Running..." : "Run Bridge"}
+      </button>
+      {error && <p style={{ color: "#ef5350", marginTop: "0.75rem" }}>{error}</p>}
+      {result && (
+        <ResultBox>
+          <div><span style={{ color: "#666" }}>Airport type: </span>{result.airportType}</div>
+          <div><span style={{ color: "#666" }}>Operation: </span>{result.operation}</div>
+          <div style={{ color: "#aaa", marginTop: "0.45rem" }}>{result.result}</div>
+        </ResultBox>
+      )}
+    </SectionCard>
+  );
+};
+
+const ProxySection = () => {
+  const [system, setSystem] = useState<ProxySystem>("atc");
+  const [role, setRole] = useState("operator");
+  const [query, setQuery] = useState("active-flights");
+  const [result, setResult] = useState<ProxyAccessResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const runDemo = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      setResult(await proxyAccess(system, role.trim(), query.trim()));
+    } catch {
+      setError("Proxy demo failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <SectionCard
+      title="Sensitive System Access"
+      badge="Proxy"
+      badgeColor="#ad1457"
+      description="Proxy checks permissions before forwarding access to ATC or Security Database."
+    >
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "0.5rem" }}>
+        <Field label="System">
+          <select style={inputStyle} value={system} onChange={(e) => setSystem(e.target.value as ProxySystem)}>
+            <option value="atc">Air Traffic Control</option>
+            <option value="securitydb">Security Database</option>
+          </select>
+        </Field>
+        <Field label="Role">
+          <input style={inputStyle} value={role} onChange={(e) => setRole(e.target.value)} />
+        </Field>
+        <Field label="Query">
+          <input style={inputStyle} value={query} onChange={(e) => setQuery(e.target.value)} />
+        </Field>
+      </div>
+      <button onClick={runDemo} disabled={loading} style={btnStyle(loading, "#ad1457")}>
+        {loading ? "Checking..." : "Run Proxy"}
+      </button>
+      {error && <p style={{ color: "#ef5350", marginTop: "0.75rem" }}>{error}</p>}
+      {result && (
+        <ResultBox>
+          <div><span style={{ color: "#666" }}>System: </span>{result.system}</div>
+          <div><span style={{ color: "#666" }}>Role: </span>{result.role}</div>
+          <div style={{ color: "#aaa", marginTop: "0.45rem" }}>{result.result}</div>
+        </ResultBox>
+      )}
+    </SectionCard>
+  );
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ROOT EXPORT
 // ─────────────────────────────────────────────────────────────────────────────
@@ -632,11 +894,92 @@ const StructuralPatternsDemoSection = () => (
   <section style={{ marginTop: "2.5rem", textAlign: "left" }}>
     <h2 style={{ marginBottom: "0.25rem" }}>Structural Design Patterns</h2>
     <p style={{ color: "#666", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
-      Live demos calling backend endpoints that implement Adapter, Composite, and Façade patterns in C#.
+      Live demos calling backend endpoints that implement Adapter, Composite, Façade, Flyweight, Decorator, Bridge, and Proxy patterns in C#.
     </p>
+
+    <ResultBox>
+      <div style={{ color: "#ddd", fontWeight: 700, marginBottom: "0.55rem", fontSize: "0.86rem" }}>
+        How each pattern works in this codebase
+      </div>
+      <CodeCallout
+        title="Adapter flow"
+        color="#e65100"
+        lines={[
+          "UI -> adapterPay(req)",
+          "POST /api/StructuralPatterns/adapter/pay",
+          "Controller chooses IPaymentProcessor adapter (PayPal/Stripe/GooglePay)",
+          "AirportPaymentService calls one unified interface",
+        ]}
+      />
+      <CodeCallout
+        title="Composite flow"
+        color="#2e7d32"
+        lines={[
+          "UI -> getRestaurantMenu() or filterMenu(min,max)",
+          "GET /api/StructuralPatterns/composite/menu",
+          "MenuSection + MenuItem share IMenuComponent",
+          "Tree is rendered recursively and section prices come from children",
+        ]}
+      />
+      <CodeCallout
+        title="Facade flow"
+        color="#6a1b9a"
+        lines={[
+          "UI -> searchRooms() / bookRoom() / cancelBooking()",
+          "POST /api/StructuralPatterns/facade/book-room",
+          "HotelReservationFacade orchestrates search, availability, payment, repo, notifications",
+          "Frontend does one simple call, not many subsystem calls",
+        ]}
+      />
+      <CodeCallout
+        title="Flyweight flow"
+        color="#00838f"
+        lines={[
+          "UI -> getFlyweightResources()",
+          "GET /api/StructuralPatterns/flyweight/resources",
+          "Factory reuses shared Gate/Runway flyweight objects",
+          "Assignments carry extrinsic context like flight and slot",
+        ]}
+      />
+      <CodeCallout
+        title="Decorator flow"
+        color="#6d4c41"
+        lines={[
+          "UI -> decorateBooking(req)",
+          "POST /api/StructuralPatterns/decorator/booking",
+          "Base booking gets wrapped with PriorityBoarding/Lounge decorators",
+          "Total price and description are built dynamically",
+        ]}
+      />
+      <CodeCallout
+        title="Bridge flow"
+        color="#283593"
+        lines={[
+          "UI -> runBridgeOperation(airportType, operation, identifier)",
+          "GET /api/StructuralPatterns/bridge/operations",
+          "Operation abstraction is decoupled from airport implementation",
+          "Any operation can work with International/Domestic/Cargo",
+        ]}
+      />
+      <CodeCallout
+        title="Proxy flow"
+        color="#ad1457"
+        lines={[
+          "UI -> proxyAccess(system, role, query)",
+          "GET /api/StructuralPatterns/proxy/access",
+          "Proxy validates role-based permission rules",
+          "Only authorized access reaches sensitive real systems",
+        ]}
+      />
+    </ResultBox>
+
     <AdapterSection />
     <CompositeSection />
     <FacadeSection />
+    <FlyweightSection />
+    <DecoratorSection />
+    <BridgeSection />
+    <ProxySection />
   </section>
 );
 

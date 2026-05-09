@@ -10,7 +10,7 @@ skinparam Linetype ortho
 ' =======================
 ' DESIGN PATTERNS - SINGLETON
 ' =======================
-package "BusinessLogic.DesignPatterns.Singleton" {
+package "Singleton" {
 
   class DatabaseConnectionManager {
     -_instance : Lazy<DatabaseConnectionManager>

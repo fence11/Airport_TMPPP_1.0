@@ -7,9 +7,8 @@ skinparam ClassFontSize 12
 skinparam ClassFontName "Segoe UI"
 skinparam Linetype ortho
 
-title Composite Pattern – Airport Restaurant Menu
 
-package "BusinessLogic.DesignPatterns.Composite" {
+package "Composite" {
 
   ' ── Component (common interface) ──────────────────────────
   interface IMenuComponent {

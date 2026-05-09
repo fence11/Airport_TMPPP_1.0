@@ -68,3 +68,27 @@ export const getSingletonInfo = async (): Promise<DatabaseConnectionInfo> => {
   return response.data;
 };
 
+// ===== Abstract Factory =====
+
+export type TravelerProfile = "business" | "family";
+
+export type AbstractFactoryBundle = {
+  profile: string;
+  loungeName: string;
+  loungeBenefits: string;
+  transferType: string;
+  transferDetails: string;
+  insurancePlan: string;
+  insuranceCoverage: string;
+};
+
+export const getAbstractFactoryBundle = async (
+  profile: TravelerProfile
+): Promise<AbstractFactoryBundle> => {
+  const response = await apiClient.get<AbstractFactoryBundle>(
+    "/api/DesignPatterns/abstract-factory/service-bundle",
+    { params: { profile } }
+  );
+  return response.data;
+};
+

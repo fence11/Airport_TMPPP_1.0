@@ -1,38 +1,19 @@
 namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Adapter
 {
-    // ─────────────────────────────────────────────────────────────────────────
-    // TARGET INTERFACE
-    // The unified payment interface that the rest of the airport system uses.
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// The unified payment interface that every part of the airport system
-    /// uses — regardless of which gateway is under the hood.
-    /// </summary>
+    // one interface for any payment processor we want to use in the airport system
     public interface IPaymentProcessor
     {
-        /// <summary>Charge the given amount in the specified currency.</summary>
-        /// <returns>A transaction receipt.</returns>
         PaymentResult Charge(decimal amount, string currency, string description);
-
-        /// <summary>Refund a previously completed transaction.</summary>
         bool Refund(string transactionId, decimal amount);
-
-        /// <summary>Human-readable gateway name (useful for logging / UI).</summary>
         string GatewayName { get; }
     }
 
-    /// <summary>Returned by every <see cref="IPaymentProcessor"/> call.</summary>
+    /// Returned by all <see cref="IPaymentProcessor"/> call
     public sealed record PaymentResult(
         bool   Success,
         string TransactionId,
         string Message);
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // ADAPTEES  –  third-party SDKs with their own, incompatible APIs
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /// <summary>Simulated PayPal SDK (incompatible API).</summary>
     public sealed class PayPalSdk
     {
         public PayPalResponse MakePayment(
@@ -40,7 +21,6 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Adapter
             string   payerEmail,
             string   note)
         {
-            // Simulate success for demo purposes.
             return new PayPalResponse(
                 Status      : "COMPLETED",
                 PayPalTxId  : $"PP-{Guid.NewGuid():N}",
@@ -49,15 +29,11 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Adapter
 
         public bool IssueRefund(string payPalTxId, double amount)
         {
-            // Simulate refund.
             return true;
         }
     }
 
     public sealed record PayPalResponse(string Status, string PayPalTxId, string Detail);
-
-
-    /// <summary>Simulated Stripe SDK (incompatible API).</summary>
     public sealed class StripeSdk
     {
         public StripeChargeResult CreateCharge(
@@ -84,7 +60,6 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Adapter
     public sealed record StripeRefundResult(string Id, string Status);
 
 
-    /// <summary>Simulated Google Pay API (incompatible API).</summary>
     public sealed class GooglePayApi
     {
         public GooglePayResponse ProcessTransaction(
@@ -105,15 +80,6 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Adapter
 
     public sealed record GooglePayResponse(string TransactionState, string TransactionId);
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // ADAPTERS  –  wrap each SDK so it looks like IPaymentProcessor
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Adapts <see cref="PayPalSdk"/> to <see cref="IPaymentProcessor"/>.
-    /// Converts decimal amount/currency to USD double, maps results to
-    /// the shared <see cref="PaymentResult"/> record.
-    /// </summary>
     public sealed class PayPalAdapter : IPaymentProcessor
     {
         private readonly PayPalSdk _payPal;
@@ -126,7 +92,6 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Adapter
 
         public PaymentResult Charge(decimal amount, string currency, string description)
         {
-            // PayPal SDK only accepts USD doubles.
             double usdAmount = (double)amount;
             var response = _payPal.MakePayment(usdAmount, SenderEmail, description);
 
@@ -138,12 +103,6 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Adapter
             _payPal.IssueRefund(transactionId, (double)amount);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Adapts <see cref="StripeSdk"/> to <see cref="IPaymentProcessor"/>.
-    /// Converts decimal to cents (long) for Stripe.
-    /// </summary>
     public sealed class StripeAdapter : IPaymentProcessor
     {
         private readonly StripeSdk _stripe;
@@ -172,12 +131,6 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Adapter
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Adapts <see cref="GooglePayApi"/> to <see cref="IPaymentProcessor"/>.
-    /// Constructs a minimal JSON payment token expected by the Google Pay API.
-    /// </summary>
     public sealed class GooglePayAdapter : IPaymentProcessor
     {
         private readonly GooglePayApi _googlePay;
@@ -189,7 +142,6 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Adapter
 
         public PaymentResult Charge(decimal amount, string currency, string description)
         {
-            // Build a minimal JSON token as required by the Google Pay API.
             string token = $"{{\"description\":\"{description}\"}}";
             var response = _googlePay.ProcessTransaction(token, amount, currency);
 
@@ -204,15 +156,6 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Adapter
             _googlePay.ReverseTransaction(transactionId);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // PAYMENT SERVICE  –  client code that uses only IPaymentProcessor
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// High-level airport payment service.  It only ever talks to
-    /// <see cref="IPaymentProcessor"/>; it has no knowledge of the underlying
-    /// SDKs – that is the whole point of the Adapter pattern.
-    /// </summary>
     public sealed class AirportPaymentService
     {
         private readonly IPaymentProcessor _processor;
@@ -228,19 +171,12 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Adapter
             string description = $"Ticket purchase – flight {flightNumber}";
             var result = _processor.Charge(amount, currency, description);
 
-            Console.WriteLine(
-                $"[{_processor.GatewayName}] Ticket payment " +
-                $"{(result.Success ? "succeeded" : "FAILED")}: {result.Message}");
-
             return result;
         }
 
         public bool RequestRefund(string transactionId, decimal amount)
         {
             bool ok = _processor.Refund(transactionId, amount);
-            Console.WriteLine(
-                $"[{_processor.GatewayName}] Refund {transactionId}: " +
-                $"{(ok ? "approved" : "rejected")}");
             return ok;
         }
     }

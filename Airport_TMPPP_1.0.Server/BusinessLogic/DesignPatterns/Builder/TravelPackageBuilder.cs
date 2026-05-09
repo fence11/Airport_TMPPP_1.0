@@ -1,9 +1,5 @@
 namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Builder
 {
-    /// <summary>
-    /// The complex object that will be constructed using the Builder pattern.
-    /// Represents a customizable travel package that could be sold by the airport system.
-    /// </summary>
     public sealed class TravelPackage
     {
         public string CustomerName { get; }
@@ -36,10 +32,7 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Builder
         }
     }
 
-    /// <summary>
-    /// Builder interface that defines the steps for constructing a TravelPackage.
-    /// Methods are fluent so the client can customize the package step‑by‑step.
-    /// </summary>
+
     public interface ITravelPackageBuilder
     {
         ITravelPackageBuilder ForCustomer(string customerName);
@@ -53,9 +46,6 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Builder
         TravelPackage Build();
     }
 
-    /// <summary>
-    /// Concrete builder that stores intermediate state and finally creates an immutable TravelPackage.
-    /// </summary>
     public sealed class CustomTravelPackageBuilder : ITravelPackageBuilder
     {
         private string? _customerName;
@@ -158,9 +148,8 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Builder
         }
     }
 
-    /// <summary>
-    /// Director responsible for orchestrating the construction steps to produce pre‑defined travel products.
-    /// </summary>
+
+    // Director responsible for orchestrating the construction steps to produce pre‑defined travel products.
     public sealed class TravelDirector
     {
         public TravelPackage CreateWeekendCityBreak(
