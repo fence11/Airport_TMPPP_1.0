@@ -8,7 +8,7 @@
     ".NETCoreApp,Version=v8.0": {
       "Airport_TMPPP_1.0.Server/1.0.0": {
         "dependencies": {
-          "Microsoft.AspNetCore.SpaProxy": "8.0.24",
+          "Microsoft.AspNetCore.SpaProxy": "8.0.26",
           "Microsoft.EntityFrameworkCore": "8.0.0",
           "Microsoft.EntityFrameworkCore.Design": "8.0.0",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "8.0.0",
@@ -26,11 +26,11 @@
           }
         }
       },
-      "Microsoft.AspNetCore.SpaProxy/8.0.24": {
+      "Microsoft.AspNetCore.SpaProxy/8.0.26": {
         "runtime": {
           "lib/net8.0/Microsoft.AspNetCore.SpaProxy.dll": {
-            "assemblyVersion": "8.0.24.0",
-            "fileVersion": "8.0.2426.7207"
+            "assemblyVersion": "8.0.26.0",
+            "fileVersion": "8.0.2626.16911"
           }
         }
       },
@@ -559,12 +559,12 @@
       "path": "humanizer.core/2.14.1",
       "hashPath": "humanizer.core.2.14.1.nupkg.sha512"
     },
-    "Microsoft.AspNetCore.SpaProxy/8.0.24": {
+    "Microsoft.AspNetCore.SpaProxy/8.0.26": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-Rp0r2Ie9zd8k+TYV10TYDGxu+fLoQoOtd8lRyRvaM/SK2BqqtG0k5JewmUJsYXu6jy5mXc9vuNydQb5AjFrz1g==",
-      "path": "microsoft.aspnetcore.spaproxy/8.0.24",
-      "hashPath": "microsoft.aspnetcore.spaproxy.8.0.24.nupkg.sha512"
+      "sha512": "sha512-W/G2DtEUCuXKMgy/OtWhxhmfWe0c087zUk+f4riOttIJzvyrc0X0U2Sf1sPWiN3Nu0n5EW3rX9ANhF94XgPPdQ==",
+      "path": "microsoft.aspnetcore.spaproxy/8.0.26",
+      "hashPath": "microsoft.aspnetcore.spaproxy.8.0.26.nupkg.sha512"
     },
     "Microsoft.Bcl.AsyncInterfaces/6.0.0": {
       "type": "package",

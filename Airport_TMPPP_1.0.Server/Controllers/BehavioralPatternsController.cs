@@ -14,25 +14,18 @@ namespace Airport_TMPPP_1._0.Server.Controllers
     {
         private readonly IUnitOfWork _uow;
 
-        // ── Shared long-lived instances ───────────────────────────────────────
-        //
-        // _commandInvoker is static so command history persists across requests,
-        // but it NO LONGER stores IUnitOfWork. IUnitOfWork is passed into every
-        // call at request time so the current scope's live DbContext is always used.
-        //
-        // _caretaker holds only plain data (no DB context), so static is fine.
-
-        private static readonly FlightCommandInvoker  _commandInvoker = new();
-        private static readonly AirportConfigCaretaker _caretaker      = new();
+        // Shared long-lived instances (scoped per-app for demo purposes)
+        private static readonly FlightCommandInvoker _commandInvoker = new();
+        private static readonly AirportConfigCaretaker _caretaker = new();
 
         public BehavioralPatternsController(IUnitOfWork uow) => _uow = uow;
 
-        // ── STRATEGY ─────────────────────────────────────────────────────────
+        // ── STRATEGY ─────────────────────────────────────────────────────
 
         [HttpGet("strategy/schedule")]
         public async Task<IActionResult> RunSchedulingStrategy(
-            [FromQuery] string strategy   = "fcfs",
-            [FromQuery] int    runwayCount = 2)
+            [FromQuery] string strategy = "fcfs",
+            [FromQuery] int runwayCount = 2)
         {
             var flights = (await _uow.Flights.GetAllAsync()).ToList();
 
@@ -42,23 +35,23 @@ namespace Airport_TMPPP_1._0.Server.Controllers
 
             IFlightSchedulingStrategy schedulingStrategy = strategy.ToLower() switch
             {
-                "sjf"        => new ShortestJobFirstStrategy(),
-                "roundrobin" => new RoundRobinStrategy(),
-                _            => new FirstComeFirstServedStrategy()
+                "sjf"       => new ShortestJobFirstStrategy(),
+                "roundrobin"=> new RoundRobinStrategy(),
+                _           => new FirstComeFirstServedStrategy()
             };
 
             var scheduler = new FlightScheduler(schedulingStrategy);
-            var window    = DateTime.UtcNow.Date.AddHours(6);
+            var window = DateTime.UtcNow.Date.AddHours(6);
             var scheduled = scheduler.RunSchedule(flights, runways, window, window.AddHours(16)).ToList();
 
             return Ok(new
             {
-                Strategy     = scheduler.CurrentStrategy,
-                Description  = scheduler.CurrentDescription,
-                WindowStart  = window,
+                Strategy = scheduler.CurrentStrategy,
+                Description = scheduler.CurrentDescription,
+                WindowStart = window,
                 TotalFlights = flights.Count,
                 TotalRunways = runways.Count,
-                Schedule     = scheduled
+                Schedule = scheduled
             });
         }
 
@@ -66,11 +59,11 @@ namespace Airport_TMPPP_1._0.Server.Controllers
         public IActionResult GetAvailableStrategies() => Ok(new[]
         {
             new { Key = "fcfs",       Name = "First-Come First-Served", Description = "Assigns flights in registration order." },
-            new { Key = "sjf",        Name = "Shortest Job First",      Description = "Short-turnaround flights take priority." },
-            new { Key = "roundrobin", Name = "Round-Robin",             Description = "Distributes evenly across all runways." }
+            new { Key = "sjf",        Name = "Shortest Job First",       Description = "Short-turnaround flights take priority." },
+            new { Key = "roundrobin", Name = "Round-Robin",              Description = "Distributes evenly across all runways." }
         });
 
-        // ── OBSERVER ─────────────────────────────────────────────────────────
+        // ── OBSERVER ─────────────────────────────────────────────────────
 
         [HttpPost("observer/status-change")]
         public async Task<IActionResult> ChangeFlightStatus([FromBody] ChangeFlightStatusRequest req)
@@ -79,7 +72,7 @@ namespace Airport_TMPPP_1._0.Server.Controllers
                 return BadRequest("FlightNumber is required.");
 
             var flights = await _uow.Flights.GetAllAsync();
-            var flight  = flights.FirstOrDefault(f =>
+            var flight = flights.FirstOrDefault(f =>
                 f.FlightNumber.Equals(req.FlightNumber, StringComparison.OrdinalIgnoreCase));
 
             if (flight is null)
@@ -89,8 +82,7 @@ namespace Airport_TMPPP_1._0.Server.Controllers
                 return BadRequest($"Invalid status. Valid values: {string.Join(", ", Enum.GetNames<FlightStatus>())}");
 
             var oldStatus = req.OldStatus != null && Enum.TryParse<FlightStatus>(req.OldStatus, true, out var os)
-                ? os
-                : FlightStatus.Scheduled;
+                ? os : FlightStatus.Scheduled;
 
             var evt = new FlightStatusChangedEvent(
                 flight.Id,
@@ -110,7 +102,7 @@ namespace Airport_TMPPP_1._0.Server.Controllers
 
             return Ok(new
             {
-                Event                = evt,
+                Event = evt,
                 ObserverNotifications = observerLogs
             });
         }
@@ -129,7 +121,7 @@ namespace Airport_TMPPP_1._0.Server.Controllers
             return Ok(new
             {
                 EventHistory = FlightStatusEventBus.Shared.GetHistory().Take(20),
-                Observers    = observers
+                Observers = observers
             });
         }
 
@@ -137,20 +129,7 @@ namespace Airport_TMPPP_1._0.Server.Controllers
         public IActionResult GetFlightStatuses() =>
             Ok(Enum.GetNames<FlightStatus>());
 
-        // ── COMMAND ───────────────────────────────────────────────────────────
-        //
-        // FIX — two bugs corrected:
-        //
-        // Bug 1 (ObjectDisposedException on Undo):
-        //   Commands no longer capture IUnitOfWork in their constructors.
-        //   IUnitOfWork is passed as a parameter to ExecuteAsync / UndoLastAsync
-        //   so the current request's live scoped DbContext is always used.
-        //
-        // Bug 2 (InvalidOperationException / EF identity conflict on Rename):
-        //   UpdateFlightNumberCommand now loads the TRACKED entity via
-        //   GetByIdAsync, mutates it in place, then calls UpdateAsync on the
-        //   same object. No new Flight instance is created, so EF Core's change
-        //   tracker never sees two objects with the same primary key.
+        // ── COMMAND ──────────────────────────────────────────────────────
 
         [HttpPost("command/create-flight")]
         public async Task<IActionResult> CommandCreateFlight([FromBody] CommandCreateFlightRequest req)
@@ -160,23 +139,19 @@ namespace Airport_TMPPP_1._0.Server.Controllers
             if (req.AirportId <= 0)
                 return BadRequest("AirportId must be positive.");
 
-            var cmd    = new CreateFlightCommand(req.FlightNumber, req.AirportId);
-            var result = await _commandInvoker.ExecuteAsync(cmd, _uow);
-
-            return result.Success
-                ? Ok(new { result, CanUndo = _commandInvoker.CanUndo, NextUndo = _commandInvoker.PeekNextUndo })
-                : Conflict(result);
+            var cmd = new CreateFlightCommand(_uow, req.FlightNumber, req.AirportId);
+            var result = await _commandInvoker.ExecuteAsync(cmd);
+            return result.Success ? Ok(new { result, CanUndo = _commandInvoker.CanUndo, NextUndo = _commandInvoker.PeekNextUndo })
+                                  : Conflict(result);
         }
 
         [HttpPost("command/delete-flight/{flightId:int}")]
         public async Task<IActionResult> CommandDeleteFlight(int flightId)
         {
-            var cmd    = new DeleteFlightCommand(flightId);
-            var result = await _commandInvoker.ExecuteAsync(cmd, _uow);
-
-            return result.Success
-                ? Ok(new { result, CanUndo = _commandInvoker.CanUndo, NextUndo = _commandInvoker.PeekNextUndo })
-                : NotFound(result);
+            var cmd = new DeleteFlightCommand(_uow, flightId);
+            var result = await _commandInvoker.ExecuteAsync(cmd);
+            return result.Success ? Ok(new { result, CanUndo = _commandInvoker.CanUndo, NextUndo = _commandInvoker.PeekNextUndo })
+                                  : NotFound(result);
         }
 
         [HttpPost("command/rename-flight")]
@@ -185,34 +160,29 @@ namespace Airport_TMPPP_1._0.Server.Controllers
             if (req.FlightId <= 0 || string.IsNullOrWhiteSpace(req.NewFlightNumber))
                 return BadRequest("FlightId and NewFlightNumber are required.");
 
-            var cmd    = new UpdateFlightNumberCommand(req.FlightId, req.NewFlightNumber);
-            var result = await _commandInvoker.ExecuteAsync(cmd, _uow);
-
-            return result.Success
-                ? Ok(new { result, CanUndo = _commandInvoker.CanUndo, NextUndo = _commandInvoker.PeekNextUndo })
-                : NotFound(result);
+            var cmd = new UpdateFlightNumberCommand(_uow, req.FlightId, req.NewFlightNumber);
+            var result = await _commandInvoker.ExecuteAsync(cmd);
+            return result.Success ? Ok(new { result, CanUndo = _commandInvoker.CanUndo, NextUndo = _commandInvoker.PeekNextUndo })
+                                  : NotFound(result);
         }
 
         [HttpPost("command/undo")]
         public async Task<IActionResult> UndoLastCommand()
         {
-            // _uow is the current request's scoped context — alive for this request.
             var result = await _commandInvoker.UndoLastAsync(_uow);
-
-            return result.Success
-                ? Ok(new { result, CanUndo = _commandInvoker.CanUndo, NextUndo = _commandInvoker.PeekNextUndo })
-                : BadRequest(result);
+            return result.Success ? Ok(new { result, CanUndo = _commandInvoker.CanUndo, NextUndo = _commandInvoker.PeekNextUndo })
+                                  : BadRequest(result);
         }
 
         [HttpGet("command/history")]
         public IActionResult GetCommandHistory() => Ok(new
         {
-            CanUndo  = _commandInvoker.CanUndo,
+            CanUndo = _commandInvoker.CanUndo,
             NextUndo = _commandInvoker.PeekNextUndo,
-            Log      = _commandInvoker.GetLog()
+            Log = _commandInvoker.GetLog()
         });
 
-        // ── MEMENTO ───────────────────────────────────────────────────────────
+        // ── MEMENTO ──────────────────────────────────────────────────────
 
         [HttpGet("memento/config")]
         public IActionResult GetCurrentConfig() =>
@@ -245,7 +215,6 @@ namespace Airport_TMPPP_1._0.Server.Controllers
         {
             if (!_caretaker.RestoreSnapshot(mementoId))
                 return NotFound($"Snapshot {mementoId} not found.");
-
             return Ok(new { Message = $"Restored to snapshot {mementoId}", Config = _caretaker.GetCurrentConfig() });
         }
 
@@ -254,7 +223,6 @@ namespace Airport_TMPPP_1._0.Server.Controllers
         {
             if (!_caretaker.RestoreLast())
                 return BadRequest("No previous snapshot to restore.");
-
             return Ok(new { Message = "Reverted to previous configuration", Config = _caretaker.GetCurrentConfig() });
         }
 
@@ -262,15 +230,15 @@ namespace Airport_TMPPP_1._0.Server.Controllers
         public IActionResult GetConfigHistory() =>
             Ok(_caretaker.GetHistory());
 
-        // ── ITERATOR ──────────────────────────────────────────────────────────
+        // ── ITERATOR ─────────────────────────────────────────────────────
 
         [HttpGet("iterator/flights")]
         public async Task<IActionResult> IterateFlights(
-            [FromQuery] int     page        = 1,
-            [FromQuery] int     pageSize    = 5,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 5,
             [FromQuery] string? airportCode = null)
         {
-            var flights  = await _uow.Flights.GetAllAsync();
+            var flights = await _uow.Flights.GetAllAsync();
             var airports = await _uow.Airports.GetAllAsync();
 
             IAirportIterator<FlightIteratorItem> iterator = airportCode != null
@@ -285,7 +253,7 @@ namespace Airport_TMPPP_1._0.Server.Controllers
 
             return Ok(new
             {
-                IteratorType      = airportCode != null ? "FilteredFlightIterator" : "FlightIterator",
+                IteratorType = airportCode != null ? "FilteredFlightIterator" : "FlightIterator",
                 FilterDescription = filterDesc,
                 result.Page,
                 result.PageSize,
@@ -297,16 +265,16 @@ namespace Airport_TMPPP_1._0.Server.Controllers
 
         [HttpGet("iterator/facilities")]
         public IActionResult IterateFacilities(
-            [FromQuery] int     page     = 1,
-            [FromQuery] int     pageSize = 5,
-            [FromQuery] string? type     = null)
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 5,
+            [FromQuery] string? type = null)
         {
             var iterator = AirportIteratorFactory.CreateFacilityIterator(type);
-            var result   = AirportIteratorFactory.Paginate(iterator, page, pageSize);
+            var result = AirportIteratorFactory.Paginate(iterator, page, pageSize);
 
             return Ok(new
             {
-                IteratorType      = "FacilityIterator",
+                IteratorType = "FacilityIterator",
                 FilterDescription = type != null ? $"Facilities of type: {type}" : "All facilities",
                 result.Page,
                 result.PageSize,
@@ -321,32 +289,32 @@ namespace Airport_TMPPP_1._0.Server.Controllers
             Ok(new[] { "Gate", "Runway", "Terminal", "Lounge" });
     }
 
-    // ── Request DTOs ──────────────────────────────────────────────────────────
+    // ── Request DTOs ──────────────────────────────────────────────────────
 
     public sealed record ChangeFlightStatusRequest(
-        string  FlightNumber,
-        string  NewStatus,
+        string FlightNumber,
+        string NewStatus,
         string? OldStatus = null,
-        string? GateCode  = null,
-        string? Reason    = null);
+        string? GateCode = null,
+        string? Reason = null);
 
     public sealed record CommandCreateFlightRequest(
         string FlightNumber,
-        int    AirportId);
+        int AirportId);
 
     public sealed record CommandRenameFlightRequest(
-        int    FlightId,
+        int FlightId,
         string NewFlightNumber);
 
     public sealed class UpdateAirportConfigRequest
     {
-        public string?       TerminalLayout          { get; set; }
-        public int?          ActiveRunways            { get; set; }
-        public int?          MaxDailyFlights          { get; set; }
-        public bool?         IsInternationalEnabled   { get; set; }
-        public List<string>? ActiveGates              { get; set; }
-        public string?       SecurityLevel            { get; set; }
-        public string?       Notes                    { get; set; }
+        public string? TerminalLayout { get; set; }
+        public int? ActiveRunways { get; set; }
+        public int? MaxDailyFlights { get; set; }
+        public bool? IsInternationalEnabled { get; set; }
+        public List<string>? ActiveGates { get; set; }
+        public string? SecurityLevel { get; set; }
+        public string? Notes { get; set; }
     }
 
     public sealed record SaveSnapshotRequest(string? Label);
