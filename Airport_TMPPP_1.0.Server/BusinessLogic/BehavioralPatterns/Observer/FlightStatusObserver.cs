@@ -69,11 +69,11 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Observer
         {
             var msg = evt.NewStatus switch
             {
-                FlightStatus.Boarding  => $"📱 SMS sent: Your flight {evt.FlightNumber} is boarding at gate {evt.GateCode ?? "TBD"}. Please proceed now.",
-                FlightStatus.Delayed   => $"📧 Email sent: Flight {evt.FlightNumber} delayed. Reason: {evt.Reason ?? "operational"}.",
-                FlightStatus.Cancelled => $"📧 Email+SMS: Flight {evt.FlightNumber} CANCELLED. Rebooking link sent.",
-                FlightStatus.Departed  => $"📱 SMS sent: Flight {evt.FlightNumber} has departed. Safe travels!",
-                _ => $"📱 Notification: Flight {evt.FlightNumber} status → {evt.NewStatus}"
+                FlightStatus.Boarding  => $"SMS sent: Your flight {evt.FlightNumber} is boarding at gate {evt.GateCode ?? "TBD"}. Please proceed now.",
+                FlightStatus.Delayed   => $"Email sent: Flight {evt.FlightNumber} delayed. Reason: {evt.Reason ?? "operational"}.",
+                FlightStatus.Cancelled => $"Email+SMS: Flight {evt.FlightNumber} CANCELLED. Rebooking link sent.",
+                FlightStatus.Departed  => $"SMS sent: Flight {evt.FlightNumber} has departed. Safe travels!",
+                _ => $"Notification: Flight {evt.FlightNumber} status → {evt.NewStatus}"
             };
             _log.Insert(0, $"{evt.ChangedAtUtc:HH:mm:ss} {msg}");
             if (_log.Count > 50) _log.RemoveAt(_log.Count - 1);
@@ -111,9 +111,9 @@ namespace Airport_TMPPP_1._0.Server.BusinessLogic.DesignPatterns.Observer
             {
                 var action = evt.NewStatus switch
                 {
-                    FlightStatus.Boarding  => $"🧳 Baggage carousel activated for flight {evt.FlightNumber}",
-                    FlightStatus.Departed  => $"🧳 Baggage loading confirmed for flight {evt.FlightNumber}",
-                    FlightStatus.Cancelled => $"🧳 Baggage retrieval initiated for {evt.FlightNumber} — all bags to reclaim belt 3",
+                    FlightStatus.Boarding  => $"Baggage carousel activated for flight {evt.FlightNumber}",
+                    FlightStatus.Departed  => $"Baggage loading confirmed for flight {evt.FlightNumber}",
+                    FlightStatus.Cancelled => $"Baggage retrieval initiated for {evt.FlightNumber} — all bags to reclaim belt 3",
                     _ => ""
                 };
                 if (!string.IsNullOrEmpty(action))

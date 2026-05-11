@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Airport_TMPPP_1.0.Server")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3485e8e868aefa8e51840ebb89474e0d516cb722")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0c48d118eb39387e0f25c8e1022011455434ed93")]
 [assembly: System.Reflection.AssemblyProductAttribute("Airport_TMPPP_1.0.Server")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Airport_TMPPP_1.0.Server")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

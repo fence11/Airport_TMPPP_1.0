@@ -1,0 +1,111 @@
+@startuml mediator
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+' =======================
+' DESIGN PATTERNS - MEDIATOR
+' =======================
+package "Mediator" {
+
+  ' ── Mediator contract ────────────────────────────────────────────────
+  interface IAirportMediator {
+    +RequestGateChange(flightId : int, newGate : string) : void
+    +RequestRunwaySlot(flightId : int, runwayCode : string) : void
+    +Broadcast(message : string) : void
+  }
+
+  note top of IAirportMediator
+    Centralises communication between
+    airport subsystems so colleagues
+    don't talk to each other directly.
+  end note
+
+  ' ── Colleague base ───────────────────────────────────────────────────
+  abstract class AirportSubsystem {
+    -_mediator : IAirportMediator
+    +AirportSubsystem(mediator : IAirportMediator)
+    +SetMediator(mediator : IAirportMediator) : void
+  }
+
+  ' ── Concrete colleagues ───────────────────────────────────────────────
+  class GateControlSystem {
+    +AssignGate(flightId : int, gateCode : string) : void
+    +ReleaseGate(gateCode : string) : void
+    +NotifyGateChanged(flightId : int, gateCode : string) : void
+  }
+
+  note right of GateControlSystem
+    Owns gate allocation rules.
+    Does not notify displays/ATC
+    directly; it goes through
+    the mediator.
+  end note
+
+  class BaggageHandlingSystem {
+    +RouteBaggage(flightId : int, gateCode : string) : void
+    +StopRouting(flightId : int) : void
+  }
+
+  class PassengerNotificationService {
+    +SendGateChange(flightId : int, gateCode : string) : void
+    +SendGeneral(message : string) : void
+  }
+
+  class AirTrafficControlSystem {
+    +ApproveRunwaySlot(flightId : int, runwayCode : string) : bool
+    +Log(message : string) : void
+  }
+
+  class FlightOperationsService {
+    +ChangeGate(flightId : int, newGate : string) : void
+    +RequestDepartureSlot(flightId : int, runwayCode : string) : void
+  }
+
+  note left of FlightOperationsService
+    Facade used by controllers/clients.
+    All cross-subsystem coordination
+    happens via IAirportMediator.
+  end note
+
+  ' ── Concrete mediator ────────────────────────────────────────────────
+  class AirportMediator {
+    -_gate : GateControlSystem
+    -_baggage : BaggageHandlingSystem
+    -_notify : PassengerNotificationService
+    -_atc : AirTrafficControlSystem
+    +AirportMediator(gate, baggage, notify, atc)
+    +RequestGateChange(flightId : int, newGate : string) : void
+    +RequestRunwaySlot(flightId : int, runwayCode : string) : void
+    +Broadcast(message : string) : void
+  }
+
+  note right of AirportMediator
+    Orchestrates:
+    - gate change => gate system + baggage routing + passenger notify
+    - runway slot => ATC approval + broadcast
+  end note
+
+  ' ── Relationships ─────────────────────────────────────────────────────
+  IAirportMediator <|.. AirportMediator
+
+  AirportSubsystem o--> IAirportMediator
+  AirportSubsystem <|-- GateControlSystem
+  AirportSubsystem <|-- BaggageHandlingSystem
+  AirportSubsystem <|-- PassengerNotificationService
+  AirportSubsystem <|-- AirTrafficControlSystem
+  AirportSubsystem <|-- FlightOperationsService
+
+  FlightOperationsService --> IAirportMediator : coordinates via
+
+  AirportMediator --> GateControlSystem
+  AirportMediator --> BaggageHandlingSystem
+  AirportMediator --> PassengerNotificationService
+  AirportMediator --> AirTrafficControlSystem
+}
+
+@enduml

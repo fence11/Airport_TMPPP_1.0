@@ -1,0 +1,82 @@
+@startuml template_method
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+' =======================
+' DESIGN PATTERNS - TEMPLATE METHOD
+' =======================
+package "Template Method" {
+
+  ' ── Template base class ───────────────────────────────────────────────
+  abstract class FlightWorkflow {
+    +Run(flightId : int) : void
+    #LoadData(flightId : int) : void
+    #Validate() : void
+    #PerformCoreStep() : void
+    #Persist() : void
+    #NotifyStakeholders() : void
+    #OnError(message : string) : void
+  }
+
+  note top of FlightWorkflow
+    Run() is the template method:
+    it defines the algorithm skeleton.
+    Subclasses override the steps but
+    the high-level flow is fixed.
+  end note
+
+  ' ── Concrete workflows ────────────────────────────────────────────────
+  class BoardingWorkflow {
+    #LoadData(flightId : int) : void
+    #Validate() : void
+    #PerformCoreStep() : void
+    #Persist() : void
+    #NotifyStakeholders() : void
+  }
+
+  note right of BoardingWorkflow
+    Core step: open gate and start
+    boarding; then notify displays
+    and passengers.
+  end note
+
+  class DepartureWorkflow {
+    #LoadData(flightId : int) : void
+    #Validate() : void
+    #PerformCoreStep() : void
+    #Persist() : void
+    #NotifyStakeholders() : void
+  }
+
+  note right of DepartureWorkflow
+    Core step: request ATC clearance
+    and mark flight Departed; then
+    propagate updates.
+  end note
+
+  class CancellationWorkflow {
+    #LoadData(flightId : int) : void
+    #Validate() : void
+    #PerformCoreStep() : void
+    #Persist() : void
+    #NotifyStakeholders() : void
+  }
+
+  note right of CancellationWorkflow
+    Core step: release resources
+    (gate, baggage routing) and set
+    status Cancelled with reason.
+  end note
+
+  ' ── Relationships ─────────────────────────────────────────────────────
+  FlightWorkflow <|-- BoardingWorkflow
+  FlightWorkflow <|-- DepartureWorkflow
+  FlightWorkflow <|-- CancellationWorkflow
+}
+
+@enduml

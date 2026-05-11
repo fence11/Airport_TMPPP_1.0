@@ -1,0 +1,151 @@
+@startuml iterator
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+' =======================
+' DESIGN PATTERNS - ITERATOR
+' =======================
+package "Iterator" {
+
+  ' ── Generic iterator interface ────────────────────────────────────────
+  interface "IAirportIterator<T>" as IAirportIterator {
+    +HasNext() : bool
+    +Next() : T
+    +Reset() : void
+    +Current : T
+    +CurrentIndex : int
+    +TotalCount : int
+  }
+
+  note top of IAirportIterator
+    Generic sequential-access contract.
+    Clients use only HasNext()/Next()
+    and never hold a reference to the
+    underlying collection.
+  end note
+
+  ' ── Element records ───────────────────────────────────────────────────
+  class FlightIteratorItem <<record>> {
+    +Id : int
+    +FlightNumber : string
+    +AirportId : int
+    +AirportName : string
+    +AirportCode : string
+    +CreatedAt : DateTime
+  }
+
+  class AirportFacility <<record>> {
+    +FacilityId : string
+    +Name : string
+    +FacilityType : string
+    +Zone : string
+    +IsOperational : bool
+    +Notes : string?
+  }
+
+  ' ── Concrete iterators ────────────────────────────────────────────────
+  class FlightIterator {
+    -_items : IReadOnlyList<FlightIteratorItem>
+    -_index : int = -1
+    +HasNext() : bool
+    +Next() : FlightIteratorItem
+    +Reset() : void
+    +Current : FlightIteratorItem
+    +CurrentIndex : int
+    +TotalCount : int
+  }
+
+  note right of FlightIterator
+    Iterates all flights joined with
+    their parent Airport (name + code).
+    Built from live PostgreSQL data
+    via AirportIteratorFactory.
+  end note
+
+  class FilteredFlightIterator {
+    -_items : IReadOnlyList<FlightIteratorItem>
+    -_index : int = -1
+    +FilterDescription : string
+    +HasNext() : bool
+    +Next() : FlightIteratorItem
+    +Reset() : void
+    +Current : FlightIteratorItem
+    +CurrentIndex : int
+    +TotalCount : int
+  }
+
+  note right of FilteredFlightIterator
+    Wraps any predicate (e.g. airport
+    code filter) at construction time.
+    Only matching items are stored,
+    so HasNext()/Next() behaviour is
+    identical to FlightIterator.
+  end note
+
+  class FacilityIterator {
+    -_items : IReadOnlyList<AirportFacility>
+    -_index : int = -1
+    +HasNext() : bool
+    +Next() : AirportFacility
+    +Reset() : void
+    +Current : AirportFacility
+    +CurrentIndex : int
+    +TotalCount : int
+  }
+
+  note right of FacilityIterator
+    Iterates gate, runway, terminal,
+    and lounge records from the static
+    facility catalogue. Accepts an
+    optional type filter.
+  end note
+
+  ' ── Iterator factory ──────────────────────────────────────────────────
+  class AirportIteratorFactory <<static>> {
+    {static} +CreateFlightIterator(flights, airports) : FlightIterator
+    {static} +CreateAirportFlightIterator(flights, airports, airportCode) : FilteredFlightIterator
+    {static} +CreateFacilityIterator(filterType?) : FacilityIterator
+    {static} +Paginate<T>(iterator, page, pageSize) : IteratorPageResult<T>
+  }
+
+  note left of AirportIteratorFactory
+    Factory + utility layer.
+    Joins Flight rows with Airport
+    data from PostgreSQL before
+    building the iterator.
+    Paginate<T>() materialises a
+    window from any iterator into a
+    IteratorPageResult without the
+    caller touching the collection.
+  end note
+
+  ' ── Page result ───────────────────────────────────────────────────────
+  class "IteratorPageResult<T>" as IteratorPageResult <<record>> {
+    +Items : IReadOnlyList<T>
+    +Page : int
+    +PageSize : int
+    +TotalCount : int
+    +TotalPages : int
+  }
+
+  ' ── Relationships ─────────────────────────────────────────────────────
+  IAirportIterator <|.. FlightIterator
+  IAirportIterator <|.. FilteredFlightIterator
+  IAirportIterator <|.. FacilityIterator
+
+  FlightIterator         ..> FlightIteratorItem   : yields
+  FilteredFlightIterator ..> FlightIteratorItem   : yields
+  FacilityIterator       ..> AirportFacility      : yields
+
+  AirportIteratorFactory ..> FlightIterator         : creates
+  AirportIteratorFactory ..> FilteredFlightIterator : creates
+  AirportIteratorFactory ..> FacilityIterator        : creates
+  AirportIteratorFactory ..> IteratorPageResult      : produces
+}
+
+@enduml

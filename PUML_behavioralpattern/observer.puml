@@ -1,0 +1,146 @@
+@startuml observer
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+' =======================
+' DESIGN PATTERNS - OBSERVER
+' =======================
+package "Observer" {
+
+  ' ── Shared event record ───────────────────────────────────────────────
+  enum FlightStatus {
+    Scheduled
+    Boarding
+    Departed
+    InAir
+    Landed
+    Delayed
+    Cancelled
+  }
+
+  class FlightStatusChangedEvent <<record>> {
+    +FlightId : int
+    +FlightNumber : string
+    +OldStatus : FlightStatus
+    +NewStatus : FlightStatus
+    +GateCode : string?
+    +Reason : string?
+    +ChangedAtUtc : DateTime
+  }
+
+  ' ── Observer interface ────────────────────────────────────────────────
+  interface IFlightStatusObserver {
+    +ObserverId : string
+    +ObserverType : string
+    +OnStatusChanged(evt : FlightStatusChangedEvent) : void
+    +GetLog() : IReadOnlyList<string>
+  }
+
+  ' ── Subject interface ─────────────────────────────────────────────────
+  interface IFlightStatusSubject {
+    +Subscribe(observer : IFlightStatusObserver) : void
+    +Unsubscribe(observerId : string) : void
+    +NotifyAll(evt : FlightStatusChangedEvent) : void
+  }
+
+  ' ── Concrete observers ────────────────────────────────────────────────
+  class GateDisplayObserver {
+    -_log : List<string>
+    +ObserverId : string = "GateDisplay"
+    +ObserverType : string = "Gate Display Board"
+    +OnStatusChanged(evt : FlightStatusChangedEvent) : void
+    +GetLog() : IReadOnlyList<string>
+  }
+
+  note right of GateDisplayObserver
+    Updates physical gate departure
+    boards. Formats messages for
+    Boarding, Departed, Delayed,
+    and Cancelled states.
+  end note
+
+  class PassengerNotificationObserver {
+    -_log : List<string>
+    +ObserverId : string = "PassengerNotify"
+    +ObserverType : string = "Passenger SMS/Email Service"
+    +OnStatusChanged(evt : FlightStatusChangedEvent) : void
+    +GetLog() : IReadOnlyList<string>
+  }
+
+  note right of PassengerNotificationObserver
+    Sends SMS for Boarding/Departed
+    and Email for Delayed/Cancelled.
+    Includes gate code and reason.
+  end note
+
+  class AirTrafficControlObserver {
+    -_log : List<string>
+    +ObserverId : string = "ATC"
+    +ObserverType : string = "Air Traffic Control"
+    +OnStatusChanged(evt : FlightStatusChangedEvent) : void
+    +GetLog() : IReadOnlyList<string>
+  }
+
+  note right of AirTrafficControlObserver
+    Records every status transition
+    with full timestamp for the
+    official ATC operations log.
+  end note
+
+  class BaggageSystemObserver {
+    -_log : List<string>
+    +ObserverId : string = "Baggage"
+    +ObserverType : string = "Baggage Handling System"
+    +OnStatusChanged(evt : FlightStatusChangedEvent) : void
+    +GetLog() : IReadOnlyList<string>
+  }
+
+  note right of BaggageSystemObserver
+    Reacts only to Boarding,
+    Departed, and Cancelled.
+    Activates carousels or
+    triggers bag retrieval.
+  end note
+
+  ' ── Concrete subject (event bus) ──────────────────────────────────────
+  class FlightStatusEventBus {
+    -_observers : Dictionary<string, IFlightStatusObserver>
+    -_eventHistory : List<FlightStatusChangedEvent>
+    -{static} _shared : Lazy<FlightStatusEventBus>
+    +{static} Shared : FlightStatusEventBus
+    +Subscribe(observer : IFlightStatusObserver) : void
+    +Unsubscribe(observerId : string) : void
+    +NotifyAll(evt : FlightStatusChangedEvent) : void
+    +GetHistory() : IReadOnlyList<FlightStatusChangedEvent>
+    +GetObservers() : IReadOnlyList<IFlightStatusObserver>
+  }
+
+  note left of FlightStatusEventBus
+    Central event bus.
+    Lazily initialises as a
+    shared instance pre-wired
+    with all four concrete observers.
+    NotifyAll() iterates every
+    subscriber synchronously.
+  end note
+
+  ' ── Relationships ─────────────────────────────────────────────────────
+  IFlightStatusSubject <|.. FlightStatusEventBus
+
+  IFlightStatusObserver <|.. GateDisplayObserver
+  IFlightStatusObserver <|.. PassengerNotificationObserver
+  IFlightStatusObserver <|.. AirTrafficControlObserver
+  IFlightStatusObserver <|.. BaggageSystemObserver
+
+  FlightStatusEventBus o--> "0..*" IFlightStatusObserver : notifies
+  FlightStatusEventBus ..> FlightStatusChangedEvent : publishes
+  IFlightStatusObserver ..> FlightStatusChangedEvent : receives
+  FlightStatusChangedEvent --> FlightStatus
+}
+
+@enduml

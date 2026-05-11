@@ -1,0 +1,118 @@
+@startuml strategy
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+' =======================
+' DESIGN PATTERNS - STRATEGY
+' =======================
+package "Strategy" {
+
+  ' ── Data records ──────────────────────────────────────────────────────
+  class ScheduledFlight <<record>> {
+    +FlightId : int
+    +FlightNumber : string
+    +RunwayId : int
+    +ScheduledTime : DateTime
+    +StrategyUsed : string
+    +Reason : string
+  }
+
+  class RunwaySlot <<record>> {
+    +RunwayId : int
+    +RunwayCode : string
+    +IsAvailable : bool
+    +NextAvailableAt : DateTime?
+  }
+
+  ' ── Strategy interface (algorithm contract) ───────────────────────────
+  interface IFlightSchedulingStrategy {
+    +StrategyName : string
+    +Description : string
+    +Schedule(flights, runways, windowStart, windowEnd) : IEnumerable<ScheduledFlight>
+  }
+
+  note top of IFlightSchedulingStrategy
+    Defines the interchangeable
+    scheduling algorithm contract.
+    All concrete strategies implement
+    this single interface so the
+    FlightScheduler never knows which
+    algorithm is running.
+  end note
+
+  ' ── Concrete strategies ───────────────────────────────────────────────
+  class FirstComeFirstServedStrategy {
+    +StrategyName : string = "FCFS"
+    +Description : string
+    +Schedule(flights, runways, windowStart, windowEnd) : IEnumerable<ScheduledFlight>
+  }
+
+  note right of FirstComeFirstServedStrategy
+    Orders flights by CreatedAt
+    and assigns them to runways
+    in registration order.
+    Slot gap: 15 min.
+  end note
+
+  class ShortestJobFirstStrategy {
+    +StrategyName : string = "SJF"
+    +Description : string
+    +Schedule(flights, runways, windowStart, windowEnd) : IEnumerable<ScheduledFlight>
+  }
+
+  note right of ShortestJobFirstStrategy
+    Orders by FlightNumber.Length
+    (proxy for turnaround time).
+    Always picks the runway with
+    the earliest free slot.
+    Slot gap: 10 min.
+  end note
+
+  class RoundRobinStrategy {
+    +StrategyName : string = "RoundRobin"
+    +Description : string
+    +Schedule(flights, runways, windowStart, windowEnd) : IEnumerable<ScheduledFlight>
+  }
+
+  note right of RoundRobinStrategy
+    Distributes flights evenly
+    across all available runways
+    using a circular index.
+    Slot gap: 12 min.
+  end note
+
+  ' ── Context ───────────────────────────────────────────────────────────
+  class FlightScheduler {
+    -_strategy : IFlightSchedulingStrategy
+    +CurrentStrategy : string
+    +CurrentDescription : string
+    +FlightScheduler(strategy : IFlightSchedulingStrategy)
+    +SetStrategy(strategy : IFlightSchedulingStrategy) : void
+    +RunSchedule(flights, runways, windowStart, windowEnd) : IEnumerable<ScheduledFlight>
+  }
+
+  note left of FlightScheduler
+    Context class.
+    Delegates all scheduling work
+    to the current strategy.
+    Strategy can be hot-swapped at
+    runtime via SetStrategy() without
+    touching client code.
+  end note
+
+  ' ── Relationships ─────────────────────────────────────────────────────
+  IFlightSchedulingStrategy <|.. FirstComeFirstServedStrategy
+  IFlightSchedulingStrategy <|.. ShortestJobFirstStrategy
+  IFlightSchedulingStrategy <|.. RoundRobinStrategy
+
+  FlightScheduler o--> IFlightSchedulingStrategy : delegates to
+  IFlightSchedulingStrategy ..> ScheduledFlight : produces
+  IFlightSchedulingStrategy ..> RunwaySlot : consumes
+}
+
+@enduml

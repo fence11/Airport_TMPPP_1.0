@@ -1,0 +1,149 @@
+@startuml command
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+' =======================
+' DESIGN PATTERNS - COMMAND
+' =======================
+package "Command" {
+
+  ' ── Result record ─────────────────────────────────────────────────────
+  class CommandResult <<record>> {
+    +Success : bool
+    +Message : string
+    +Payload : object?
+  }
+
+  class CommandLogEntry <<record>> {
+    +CommandId : string
+    +CommandName : string
+    +Description : string
+    +IssuedAtUtc : DateTime
+    +Success : bool
+    +Message : string
+    +IsUndo : bool
+  }
+
+  ' ── Command interface ─────────────────────────────────────────────────
+  interface IFlightCommand {
+    +CommandId : string
+    +CommandName : string
+    +Description : string
+    +IssuedAtUtc : DateTime
+    +CanUndo : bool
+    +ExecuteAsync() : Task<CommandResult>
+    +UndoAsync() : Task<CommandResult>
+  }
+
+  note top of IFlightCommand
+    Every action is encapsulated
+    as a self-contained Command object.
+    Both Execute and Undo are async,
+    since they write to PostgreSQL via
+    IUnitOfWork.
+  end note
+
+  ' ── Concrete commands ─────────────────────────────────────────────────
+  class CreateFlightCommand {
+    -_uow : IUnitOfWork
+    -_flightNumber : string
+    -_airportId : int
+    -_createdFlightId : int
+    +CommandId : string
+    +CommandName : string = "CreateFlight"
+    +CanUndo : bool = true
+    +ExecuteAsync() : Task<CommandResult>
+    +UndoAsync() : Task<CommandResult>
+  }
+
+  note right of CreateFlightCommand
+    Execute: inserts a new Flight row
+    in PostgreSQL and captures the
+    generated ID.
+    Undo: deletes that exact row
+    using the captured ID.
+  end note
+
+  class DeleteFlightCommand {
+    -_uow : IUnitOfWork
+    -_flightId : int
+    -_backup : Flight?
+    +CommandId : string
+    +CommandName : string = "DeleteFlight"
+    +CanUndo : bool = true
+    +ExecuteAsync() : Task<CommandResult>
+    +UndoAsync() : Task<CommandResult>
+  }
+
+  note right of DeleteFlightCommand
+    Execute: reads and caches the
+    Flight as a backup, then deletes.
+    Undo: re-inserts the cached Flight
+    record, restoring the original row.
+  end note
+
+  class UpdateFlightNumberCommand {
+    -_uow : IUnitOfWork
+    -_flightId : int
+    -_newFlightNumber : string
+    -_oldFlightNumber : string?
+    -_airportId : int?
+    +CommandId : string
+    +CommandName : string = "UpdateFlightNumber"
+    +CanUndo : bool = true
+    +ExecuteAsync() : Task<CommandResult>
+    +UndoAsync() : Task<CommandResult>
+  }
+
+  note right of UpdateFlightNumberCommand
+    Execute: saves old number, then
+    writes new number to the DB.
+    Undo: writes the saved old number
+    back to the same row.
+  end note
+
+  ' ── Invoker ───────────────────────────────────────────────────────────
+  class FlightCommandInvoker {
+    -_history : Stack<IFlightCommand>
+    -_log : List<(Command, Result, IsUndo)>
+    +CanUndo : bool
+    +PeekNextUndo : string?
+    +ExecuteAsync(command : IFlightCommand) : Task<CommandResult>
+    +UndoLastAsync() : Task<CommandResult>
+    +GetLog() : IReadOnlyList<CommandLogEntry>
+  }
+
+  note left of FlightCommandInvoker
+    Maintains a LIFO undo stack.
+    ExecuteAsync() pushes every
+    successful undoable command.
+    UndoLastAsync() pops and calls
+    UndoAsync() on it.
+    Full audit log kept separately.
+  end note
+
+  ' ── Relationships ─────────────────────────────────────────────────────
+  IFlightCommand <|.. CreateFlightCommand
+  IFlightCommand <|.. DeleteFlightCommand
+  IFlightCommand <|.. UpdateFlightNumberCommand
+
+  FlightCommandInvoker --> IFlightCommand : executes / undoes
+  FlightCommandInvoker ..> CommandLogEntry : produces
+  IFlightCommand ..> CommandResult : returns
+}
+
+' ── External dependency reference ─────────────────────────────────────────
+package "BusinessLogic.Interfaces" {
+  interface IUnitOfWork
+}
+
+CreateFlightCommand      --> IUnitOfWork : reads/writes via
+DeleteFlightCommand      --> IUnitOfWork : reads/writes via
+UpdateFlightNumberCommand --> IUnitOfWork : reads/writes via
+
+@enduml

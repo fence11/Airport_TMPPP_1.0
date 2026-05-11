@@ -1,0 +1,110 @@
+@startuml visitor
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+' =======================
+' DESIGN PATTERNS - VISITOR
+' =======================
+package "Visitor" {
+
+  ' ── Element contract ─────────────────────────────────────────────────
+  interface IAirportElement {
+    +ElementId : string
+    +Accept(visitor : IAirportVisitor) : void
+  }
+
+  note top of IAirportElement
+    Object structure is stable, while
+    operations change. Accept() enables
+    double-dispatch to the visitor.
+  end note
+
+  ' ── Concrete elements ────────────────────────────────────────────────
+  class Flight {
+    +ElementId : string
+    +FlightId : int
+    +FlightNumber : string
+    +Status : string
+    +Accept(visitor : IAirportVisitor) : void
+  }
+
+  class Gate {
+    +ElementId : string
+    +GateCode : string
+    +IsOpen : bool
+    +Accept(visitor : IAirportVisitor) : void
+  }
+
+  class Runway {
+    +ElementId : string
+    +RunwayCode : string
+    +IsAvailable : bool
+    +Accept(visitor : IAirportVisitor) : void
+  }
+
+  class AirportTerminal {
+    +ElementId : string
+    +TerminalCode : string
+    +Elements : IReadOnlyList<IAirportElement>
+    +Accept(visitor : IAirportVisitor) : void
+  }
+
+  note right of AirportTerminal
+    Composite-like "object structure":
+    a terminal aggregates elements and
+    forwards Accept() to each child.
+  end note
+
+  ' ── Visitor contract ────────────────────────────────────────────────
+  interface IAirportVisitor {
+    +VisitFlight(flight : Flight) : void
+    +VisitGate(gate : Gate) : void
+    +VisitRunway(runway : Runway) : void
+    +VisitTerminal(terminal : AirportTerminal) : void
+  }
+
+  ' ── Concrete visitors ────────────────────────────────────────────────
+  class SafetyAuditVisitor {
+    +Findings : IReadOnlyList<string>
+    +VisitFlight(flight : Flight) : void
+    +VisitGate(gate : Gate) : void
+    +VisitRunway(runway : Runway) : void
+    +VisitTerminal(terminal : AirportTerminal) : void
+  }
+
+  class ReportingVisitor {
+    +ReportLines : IReadOnlyList<string>
+    +VisitFlight(flight : Flight) : void
+    +VisitGate(gate : Gate) : void
+    +VisitRunway(runway : Runway) : void
+    +VisitTerminal(terminal : AirportTerminal) : void
+  }
+
+  note right of ReportingVisitor
+    Generates a summary (counts,
+    statuses, availability) without
+    changing element classes.
+  end note
+
+  ' ── Relationships ─────────────────────────────────────────────────────
+  IAirportElement <|.. Flight
+  IAirportElement <|.. Gate
+  IAirportElement <|.. Runway
+  IAirportElement <|.. AirportTerminal
+
+  IAirportVisitor <|.. SafetyAuditVisitor
+  IAirportVisitor <|.. ReportingVisitor
+
+  Flight ..> IAirportVisitor : Accept()
+  Gate ..> IAirportVisitor : Accept()
+  Runway ..> IAirportVisitor : Accept()
+  AirportTerminal o--> "0..*" IAirportElement
+  AirportTerminal ..> IAirportVisitor : Accept()
+}
+
+@enduml

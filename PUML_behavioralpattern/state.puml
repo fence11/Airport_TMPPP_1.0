@@ -1,0 +1,108 @@
+@startuml state
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+' =======================
+' DESIGN PATTERNS - STATE
+' =======================
+package "State" {
+
+  ' ── Context model ─────────────────────────────────────────────────────
+  class FlightContext {
+    -_state : IFlightState
+    +FlightId : int
+    +FlightNumber : string
+    +CurrentStateName : string
+    +FlightContext(flightId : int, flightNumber : string)
+    +SetState(state : IFlightState) : void
+    +Schedule() : void
+    +StartBoarding(gateCode : string) : void
+    +Depart() : void
+    +Land() : void
+    +Cancel(reason : string) : void
+  }
+
+  note left of FlightContext
+    Context delegates behaviour to
+    the current state object.
+    State transitions happen via
+    SetState() called by states.
+  end note
+
+  ' ── State contract ───────────────────────────────────────────────────
+  interface IFlightState {
+    +Name : string
+    +Schedule(ctx : FlightContext) : void
+    +StartBoarding(ctx : FlightContext, gateCode : string) : void
+    +Depart(ctx : FlightContext) : void
+    +Land(ctx : FlightContext) : void
+    +Cancel(ctx : FlightContext, reason : string) : void
+  }
+
+  ' ── Concrete states ──────────────────────────────────────────────────
+  class ScheduledState {
+    +Name : string = "Scheduled"
+    +Schedule(ctx : FlightContext) : void
+    +StartBoarding(ctx : FlightContext, gateCode : string) : void
+    +Depart(ctx : FlightContext) : void
+    +Land(ctx : FlightContext) : void
+    +Cancel(ctx : FlightContext, reason : string) : void
+  }
+
+  class BoardingState {
+    +Name : string = "Boarding"
+    +Schedule(ctx : FlightContext) : void
+    +StartBoarding(ctx : FlightContext, gateCode : string) : void
+    +Depart(ctx : FlightContext) : void
+    +Land(ctx : FlightContext) : void
+    +Cancel(ctx : FlightContext, reason : string) : void
+  }
+
+  class InAirState {
+    +Name : string = "InAir"
+    +Schedule(ctx : FlightContext) : void
+    +StartBoarding(ctx : FlightContext, gateCode : string) : void
+    +Depart(ctx : FlightContext) : void
+    +Land(ctx : FlightContext) : void
+    +Cancel(ctx : FlightContext, reason : string) : void
+  }
+
+  class LandedState {
+    +Name : string = "Landed"
+    +Schedule(ctx : FlightContext) : void
+    +StartBoarding(ctx : FlightContext, gateCode : string) : void
+    +Depart(ctx : FlightContext) : void
+    +Land(ctx : FlightContext) : void
+    +Cancel(ctx : FlightContext, reason : string) : void
+  }
+
+  class CancelledState {
+    +Name : string = "Cancelled"
+    +Schedule(ctx : FlightContext) : void
+    +StartBoarding(ctx : FlightContext, gateCode : string) : void
+    +Depart(ctx : FlightContext) : void
+    +Land(ctx : FlightContext) : void
+    +Cancel(ctx : FlightContext, reason : string) : void
+  }
+
+  note right of CancelledState
+    Terminal state: all actions
+    become no-ops or errors.
+  end note
+
+  ' ── Relationships ─────────────────────────────────────────────────────
+  IFlightState <|.. ScheduledState
+  IFlightState <|.. BoardingState
+  IFlightState <|.. InAirState
+  IFlightState <|.. LandedState
+  IFlightState <|.. CancelledState
+
+  FlightContext o--> IFlightState : current
+}
+
+@enduml

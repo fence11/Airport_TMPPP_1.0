@@ -1,0 +1,83 @@
+@startuml chain_of_responsibility
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+' =======================
+' DESIGN PATTERNS - CHAIN OF RESPONSIBILITY
+' =======================
+package "Chain of Responsibility" {
+
+  ' ── Request record ───────────────────────────────────────────────────
+  class FlightRequest <<record>> {
+    +RequestId : string
+    +FlightId : int
+    +Type : string
+    +Priority : int
+    +Message : string
+    +CreatedAtUtc : DateTime
+  }
+
+  note top of FlightRequest
+    A generic operational request:
+    e.g., "GateChange", "Emergency",
+    "VIP", "WeatherDelay".
+  end note
+
+  ' ── Handler contract ────────────────────────────────────────────────
+  abstract class RequestHandler {
+    -_next : RequestHandler?
+    +SetNext(next : RequestHandler) : RequestHandler
+    +Handle(req : FlightRequest) : bool
+    #CanHandle(req : FlightRequest) : bool
+    #Process(req : FlightRequest) : void
+  }
+
+  note right of RequestHandler
+    Handle() tries current handler;
+    if it can't handle, forwards
+    to the next handler in chain.
+  end note
+
+  ' ── Concrete handlers ────────────────────────────────────────────────
+  class ValidationHandler {
+    #CanHandle(req : FlightRequest) : bool
+    #Process(req : FlightRequest) : void
+  }
+
+  class GateSupervisorHandler {
+    #CanHandle(req : FlightRequest) : bool
+    #Process(req : FlightRequest) : void
+  }
+
+  class AirTrafficControlHandler {
+    #CanHandle(req : FlightRequest) : bool
+    #Process(req : FlightRequest) : void
+  }
+
+  class AirportManagerHandler {
+    #CanHandle(req : FlightRequest) : bool
+    #Process(req : FlightRequest) : void
+  }
+
+  note right of AirportManagerHandler
+    Last resort: approves high-impact
+    or exceptional requests when all
+    others decline.
+  end note
+
+  ' ── Relationships ─────────────────────────────────────────────────────
+  RequestHandler <|-- ValidationHandler
+  RequestHandler <|-- GateSupervisorHandler
+  RequestHandler <|-- AirTrafficControlHandler
+  RequestHandler <|-- AirportManagerHandler
+
+  RequestHandler o--> RequestHandler : next
+  RequestHandler ..> FlightRequest : handles
+}
+
+@enduml

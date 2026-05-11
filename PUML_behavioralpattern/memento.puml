@@ -1,0 +1,112 @@
+@startuml memento
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam Shadowing false
+skinparam ArrowColor #333
+skinparam ClassFontSize 12
+skinparam ClassFontName "Segoe UI"
+skinparam Linetype ortho
+
+' =======================
+' DESIGN PATTERNS - MEMENTO
+' =======================
+package "Memento" {
+
+  ' ── Memento ───────────────────────────────────────────────────────────
+  class AirportConfigMemento {
+    +MementoId : string
+    +CreatedAtUtc : DateTime
+    +Label : string
+    ~TerminalLayout : string
+    ~ActiveRunways : int
+    ~MaxDailyFlights : int
+    ~IsInternationalEnabled : bool
+    ~ActiveGates : IReadOnlyList<string>
+    ~SecurityLevel : string
+    ~Notes : string
+    +ToSnapshot() : AirportConfigSnapshot
+  }
+
+  note right of AirportConfigMemento
+    All state fields are marked
+    internal (~) — only the Originator
+    (AirportConfiguration) can read
+    them directly.
+    External callers receive the safe
+    read-only AirportConfigSnapshot DTO
+    via ToSnapshot().
+  end note
+
+  ' ── Safe public DTO (prevents internal exposure) ──────────────────────
+  class AirportConfigSnapshot <<record>> {
+    +MementoId : string
+    +Label : string
+    +CreatedAtUtc : DateTime
+    +TerminalLayout : string
+    +ActiveRunways : int
+    +MaxDailyFlights : int
+    +IsInternationalEnabled : bool
+    +ActiveGates : IReadOnlyList<string>
+    +SecurityLevel : string
+    +Notes : string
+  }
+
+  ' ── Originator ────────────────────────────────────────────────────────
+  class AirportConfiguration {
+    +TerminalLayout : string
+    +ActiveRunways : int
+    +MaxDailyFlights : int
+    +IsInternationalEnabled : bool
+    +ActiveGates : List<string>
+    +SecurityLevel : string
+    +Notes : string
+    +Save(label : string) : AirportConfigMemento
+    +Restore(memento : AirportConfigMemento) : void
+    +CurrentSnapshot() : AirportConfigSnapshot
+  }
+
+  note left of AirportConfiguration
+    Originator.
+    Save() captures its own full
+    state into a new Memento.
+    Restore() reads the Memento's
+    internal fields (allowed because
+    they share the same package) and
+    overwrites its current state.
+  end note
+
+  ' ── Caretaker ─────────────────────────────────────────────────────────
+  class AirportConfigCaretaker {
+    -_config : AirportConfiguration
+    -_history : List<AirportConfigMemento>
+    +AirportConfigCaretaker()
+    +GetCurrentConfig() : AirportConfigSnapshot
+    +ApplyChanges(...) : void
+    +SaveSnapshot(label : string) : string
+    +RestoreSnapshot(mementoId : string) : bool
+    +RestoreLast() : bool
+    +GetHistory() : IReadOnlyList<AirportConfigSnapshot>
+  }
+
+  note left of AirportConfigCaretaker
+    Caretaker.
+    Owns the ordered history list of
+    Mementos and the single Originator.
+    Never reads Memento internals —
+    only stores and passes them back
+    to the Originator on restore.
+    RestoreLast() rolls back one step
+    and discards the last entry.
+  end note
+
+  ' ── Relationships ─────────────────────────────────────────────────────
+  AirportConfigCaretaker *--> AirportConfiguration         : owns
+  AirportConfigCaretaker o--> "0..*" AirportConfigMemento  : stores history
+
+  AirportConfiguration ..> AirportConfigMemento   : creates (Save)
+  AirportConfiguration ..> AirportConfigMemento   : reads (Restore)
+  AirportConfiguration ..> AirportConfigSnapshot  : produces (CurrentSnapshot)
+  AirportConfigMemento  ..> AirportConfigSnapshot : projects (ToSnapshot)
+}
+
+@enduml
